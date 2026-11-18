@@ -10,9 +10,7 @@ class PokemonTeamBuilderApp extends StatelessWidget {
     return MaterialApp(
       title: 'Pokémon Team Builder',
       theme: buildAppTheme(),
-      home: const Scaffold(
-        body: Center(child: Text('Pokémon Team Builder')),
-      ),
+      home: const Scaffold(body: Center(child: Text('Pokémon Team Builder'))),
     );
   }
 }

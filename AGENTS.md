@@ -32,5 +32,6 @@ Read first:
 ## Working agreements
 
 - Keep scope tight: finish one thing well before starting the next.
+- Do not add helpers, methods or abstractions ahead of need. Add them when the first real caller appears, so the shape is driven by actual use. (Example: `Result.map` was removed until a repository needs `map` or `andThen`.)
 - Do not add dependencies without noting the reason in `docs/decisions.md`.
 - Keep the repo free of any reference to where the project came from or who asked for it.
