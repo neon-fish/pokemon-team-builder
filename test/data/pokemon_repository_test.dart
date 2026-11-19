@@ -89,10 +89,8 @@ void main() {
       });
 
       test('a missing or odd sprites field does not fail the Pokémon', () {
-        final missing = pikachu()
-          ..remove('sprites');
-        final odd = pikachu()
-          ..['sprites'] = 'not an object';
+        final missing = pikachu()..remove('sprites');
+        final odd = pikachu()..['sprites'] = 'not an object';
 
         expect(parsePokemon(missing).spriteUrl, isNull);
         expect(parsePokemon(odd).spriteUrl, isNull);

@@ -1,0 +1,27 @@
+{
+  "count": 1351,
+  "next": null,
+  "previous": null,
+  "results": [
+    {
+      "name": "bulbasaur",
+      "url": "https://pokeapi.co/api/v2/pokemon/1/"
+    },
+    {
+      "name": "ivysaur",
+      "url": "https://pokeapi.co/api/v2/pokemon/2/"
+    },
+    {
+      "name": "pikachu",
+      "url": "https://pokeapi.co/api/v2/pokemon/25/"
+    },
+    {
+      "name": "pikachu-rock-star",
+      "url": "https://pokeapi.co/api/v2/pokemon/10080/"
+    },
+    {
+      "name": "baxcalibur-mega",
+      "url": "https://pokeapi.co/api/v2/pokemon/10325/"
+    }
+  ]
+}

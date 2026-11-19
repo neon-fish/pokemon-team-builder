@@ -120,7 +120,8 @@ Material as the structural base (scaffold, text fields, dialogs, navigation), he
 - [ ] Cache "clear" lever for the control panel: add when the panel needs it.
 - [x] Type chart: `PokemonType`, `TypeChart`, `TypeChartRepository`, JSON reading helpers, fixture (D16).
 - [x] Pokémon detail: `Pokemon`, `BaseStats`, `PokemonRepository`, `parseResult`, real-response fixtures.
-- [ ] Search index repository (`/pokemon?limit=1400`: names and ids).
+- [x] Search index: `PokemonSummary`, `PokemonIndexRepository` (one request, ids parsed from URLs).
+- [ ] Repository providers and the first state: type chart, index, team (with persistence behind `KeyValueStore`).
 - [ ] Domain: type chart and team analysis.
 - [ ] UI: theme, search, team, analysis, compare.
 - [ ] Control panel UI (the levers' state already exists as `faultSettingsProvider`).

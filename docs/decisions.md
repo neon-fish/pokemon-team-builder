@@ -149,3 +149,10 @@ Format: **Decision**, **Options considered**, **Why**, **Trade-offs / revisit if
 - **Required vs cosmetic fields.** Id, name, types and stats are required: if one is missing or the wrong kind, the whole Pokémon is rejected. The picture is cosmetic: the official artwork is preferred, then the small sprite, else none, and a missing or odd `sprites` field never fails the Pokémon. Real data forced this: some form variants have artwork but no small sprite, and a few have neither.
 - **Types.** Only current `types` are read (the API also returns `past_types` for older games). Unknown names are skipped; a Pokémon with no recognised type is rejected.
 - **Fixtures** are trimmed real responses: Pikachu (single type), and two Koraidon forms (dual type; no picture; artwork only).
+
+### D16 addendum: the search index
+
+- **One request, 5,000 limit.** The real list is about 1,350 entries (about 90 KB) with no `next` page, so a single request suffices. The limit leaves roughly 3.7 times headroom. If the API ever outgrows it the list would be silently cut short; this is a known limitation.
+- **Forms are included** (mega evolutions, regional forms, ids from 10001): they matter for team building. Names are shown as the API gives them for now.
+- **Strict for the structure, lenient for single entries.** A response with no usable `results` is rejected. A single bad entry is skipped, because the entries are independent and one oddity should not take away search for everyone. The type chart is the opposite on purpose: every one of its 18 rows is needed.
+- **The id comes from the URL** (`/pokemon/25/`) by a small regular expression that also checks the path, so a URL for something else is not mistaken for a Pokémon.
