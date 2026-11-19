@@ -21,7 +21,6 @@ import 'package:pokemon_team_builder/data/api_client.dart';
 ///
 /// Placed outside the concurrency limiter, so cache hits never take a slot.
 class CachingApiClient implements ApiClient {
-
   CachingApiClient(
     this._inner, {
     this.ttl = const Duration(minutes: 10),
@@ -92,7 +91,6 @@ class CachingApiClient implements ApiClient {
       _entries.remove(_entries.keys.first);
     }
   }
-
 }
 
 class _Entry {

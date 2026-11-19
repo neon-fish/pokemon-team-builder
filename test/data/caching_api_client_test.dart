@@ -191,7 +191,6 @@ void main() {
 
 /// An [ApiClient] whose calls stay pending until the test completes them.
 class _ManualClient implements ApiClient {
-
   final List<Uri> calls = [];
   final List<Completer<Result<Object?>>> _pending = [];
 
@@ -209,5 +208,4 @@ class _ManualClient implements ApiClient {
     }
     _pending.clear();
   }
-
 }
