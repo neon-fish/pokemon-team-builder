@@ -1,7 +1,9 @@
-/// The Pokémon the user has picked: up to six, in the order they were added.
+/// The Pokémon the user has picked: up to six slots, in the order they were
+/// added.
 ///
-/// Holds ids only; details are loaded separately. Immutable: [add] and
-/// [remove] return a new team and leave this one alone.
+/// The same Pokémon may fill more than one slot, as in the games. Holds ids
+/// only; details are loaded separately. Immutable: [add] and [removeAt] return
+/// a new team and leave this one alone.
 class Team {
   const Team([this.ids = const []]);
 
@@ -12,24 +14,25 @@ class Team {
 
   bool get isFull => ids.length >= maxSize;
 
-  bool contains(int id) => ids.contains(id);
-
-  /// This team with [id] added at the end.
+  /// This team with [id] added in the next free slot.
   ///
-  /// Returns this team unchanged if it is already full or already has [id]:
-  /// the same Pokémon twice would add nothing to the analysis. The UI should
-  /// not offer the action in those cases, but a stray call is harmless.
+  /// Returns this team unchanged if it is already full. The UI should not offer
+  /// the action then, but a stray call is harmless.
   Team add(int id) {
-    if (isFull || contains(id)) return this;
+    if (isFull) return this;
     return Team([...ids, id]);
   }
 
-  /// This team without [id]. Unchanged if it was not in the team.
-  Team remove(int id) {
-    if (!contains(id)) return this;
+  /// This team without the Pokémon in slot [index] (counting from 0); the
+  /// later ones move up. Unchanged if there is no such slot.
+  ///
+  /// Removal is by position, not by id, because the same id can appear in
+  /// several slots.
+  Team removeAt(int index) {
+    if (index < 0 || index >= ids.length) return this;
     return Team([
-      for (final other in ids)
-        if (other != id) other,
+      for (var i = 0; i < ids.length; i++)
+        if (i != index) ids[i],
     ]);
   }
 }

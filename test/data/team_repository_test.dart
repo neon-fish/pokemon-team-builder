@@ -39,9 +39,14 @@ void main() {
     expect(team.ids, [1, 3]);
   });
 
-  test('saved data still obeys the team rules', () async {
+  test('repeated Pokémon are kept', () async {
+    final team = await loadSaved('{"ids": [4, 4, 4]}');
+    expect(team.ids, [4, 4, 4]);
+  });
+
+  test('saved data still obeys the six-slot limit', () async {
     final team = await loadSaved('{"ids": [1, 1, 2, 3, 4, 5, 6, 7, 8]}');
-    expect(team.ids, [1, 2, 3, 4, 5, 6]);
+    expect(team.ids, [1, 1, 2, 3, 4, 5]);
   });
 
   group('when storage is unavailable', () {

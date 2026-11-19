@@ -47,8 +47,7 @@ class TeamRepository {
     final object = asJsonObject(jsonDecode(saved), 'the saved team');
     final ids = asJsonList(object['ids'], 'ids').whereType<int>();
 
-    // Rebuild through `add`, so the rules (no duplicates, at most six) apply
-    // to saved data too.
+    // Rebuild through `add`, so the six-slot limit applies to saved data too.
     var team = const Team();
     for (final id in ids) {
       team = team.add(id);

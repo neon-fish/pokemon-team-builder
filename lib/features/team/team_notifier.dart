@@ -17,7 +17,7 @@ class TeamNotifier extends AsyncNotifier<Team> {
 
   /// Removes a Pokémon from the team and saves it. If the Pokémon is not on the
   /// team, does nothing.
-  Future<void> remove(int id) => _change((team) => team.remove(id));
+  Future<void> removeAt(int index) => _change((team) => team.removeAt(index));
 
   Future<void> _change(Team Function(Team team) change) async {
     // Make sure the saved team has loaded before changing anything.

@@ -19,9 +19,9 @@ void main() {
       expect(original.ids, [1]);
     });
 
-    test('ignores a Pokémon already in the team', () {
-      const team = Team([25]);
-      expect(team.add(25), same(team));
+    test('the same Pokémon can fill several slots', () {
+      final team = const Team().add(4).add(4).add(4);
+      expect(team.ids, [4, 4, 4]);
     });
 
     test('ignores a seventh Pokémon', () {
@@ -29,22 +29,43 @@ void main() {
       expect(full.isFull, isTrue);
       expect(full.add(7), same(full));
     });
+
+    test('six of the same Pokémon fill the team', () {
+      var team = const Team();
+      for (var i = 0; i < 6; i++) {
+        team = team.add(4);
+      }
+      expect(team.ids, [4, 4, 4, 4, 4, 4]);
+      expect(team.isFull, isTrue);
+    });
   });
 
-  group('remove', () {
-    test('removes the Pokémon and keeps the order of the rest', () {
+  group('removeAt', () {
+    test('removes that slot and the later ones move up', () {
       const team = Team([1, 2, 3]);
-      expect(team.remove(2).ids, [1, 3]);
+      expect(team.removeAt(1).ids, [1, 3]);
+    });
+
+    test('removes only the chosen slot when the Pokémon appears twice', () {
+      const team = Team([4, 7, 4]);
+      expect(team.removeAt(2).ids, [4, 7]);
+    });
+
+    test('can remove the first and the last slot', () {
+      const team = Team([1, 2, 3]);
+      expect(team.removeAt(0).ids, [2, 3]);
+      expect(team.removeAt(2).ids, [1, 2]);
     });
 
     test('a full team has room again', () {
       const full = Team([1, 2, 3, 4, 5, 6]);
-      expect(full.remove(3).isFull, isFalse);
+      expect(full.removeAt(2).isFull, isFalse);
     });
 
-    test('ignores a Pokémon that is not in the team', () {
+    test('ignores a slot that does not exist', () {
       const team = Team([1]);
-      expect(team.remove(9), same(team));
+      expect(team.removeAt(1), same(team));
+      expect(team.removeAt(-1), same(team));
     });
   });
 }

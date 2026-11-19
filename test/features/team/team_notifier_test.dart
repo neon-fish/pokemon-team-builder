@@ -50,7 +50,7 @@ void main() {
     await first.read(teamProvider.future);
     await first.read(teamProvider.notifier).add(25);
     await first.read(teamProvider.notifier).add(6);
-    await first.read(teamProvider.notifier).remove(25);
+    await first.read(teamProvider.notifier).removeAt(0);
 
     // A brand-new app over the same storage.
     final second = appWith(store);
@@ -84,9 +84,31 @@ void main() {
     final container = appWith(store);
     await container.read(teamProvider.future);
 
-    await container.read(teamProvider.notifier).remove(99);
+    await container.read(teamProvider.notifier).removeAt(99);
 
     expect(store.data, isEmpty);
+  });
+
+  test('six of the same Pokémon make a team, and it is saved', () async {
+    final store = InMemoryKeyValueStore();
+    final container = appWith(store);
+    final notifier = container.read(teamProvider.notifier);
+
+    // Six Charmanders, added one straight after another.
+    await Future.wait([for (var i = 0; i < 6; i++) notifier.add(4)]);
+
+    expect(container.read(teamProvider).requireValue.ids, [4, 4, 4, 4, 4, 4]);
+    expect(store.data['team'], '{"ids":[4,4,4,4,4,4]}');
+  });
+
+  test('removing one of two identical slots keeps the other', () async {
+    final store = InMemoryKeyValueStore({'team': '{"ids":[4,7,4]}'});
+    final container = appWith(store);
+    await container.read(teamProvider.future);
+
+    await container.read(teamProvider.notifier).removeAt(0);
+
+    expect(container.read(teamProvider).requireValue.ids, [7, 4]);
   });
 
   test('the team still works for the session if storage fails', () async {
