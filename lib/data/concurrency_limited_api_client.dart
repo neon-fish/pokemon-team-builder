@@ -11,7 +11,6 @@ import 'package:pokemon_team_builder/data/api_client.dart';
 /// browser or the API. Placed outside the retry layer, a request keeps its slot
 /// while it backs off, which also eases pressure on a struggling server.
 class ConcurrencyLimitedApiClient implements ApiClient {
-
   ConcurrencyLimitedApiClient(this._inner, {this.limit = 6})
     : assert(limit >= 1);
 
@@ -49,5 +48,4 @@ class ConcurrencyLimitedApiClient implements ApiClient {
       _running--;
     }
   }
-
 }

@@ -9,7 +9,6 @@ import 'package:pokemon_team_builder/data/http/http_transport.dart';
 /// Turns raw HTTP responses into [Result]s: applies the timeout, maps status
 /// codes to [ApiFailure]s and decodes JSON.
 class HttpApiClient implements ApiClient {
-
   HttpApiClient(this._transport, {this.timeout = const Duration(seconds: 10)});
 
   final HttpTransport _transport;
@@ -69,5 +68,4 @@ class HttpApiClient implements ApiClient {
     if (seconds == null || seconds < 0) return null;
     return Duration(seconds: seconds);
   }
-
 }

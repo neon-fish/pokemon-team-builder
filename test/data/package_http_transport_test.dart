@@ -9,6 +9,12 @@ import 'package:pokemon_team_builder/data/http/package_http_transport.dart';
 void main() {
   final url = Uri.parse('https://example.test/pokemon/1');
 
+  test('close releases the underlying client', () {
+    final client = _CloseTrackingClient();
+    PackageHttpTransport(client: client).close();
+    expect(client.closed, isTrue);
+  });
+
   test('returns status, headers and body', () async {
     final transport = PackageHttpTransport(
       client: MockClient(
@@ -63,4 +69,15 @@ void main() {
       ),
     );
   });
+}
+
+class _CloseTrackingClient extends http.BaseClient {
+  bool closed = false;
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) =>
+      throw UnimplementedError();
+
+  @override
+  void close() => closed = true;
 }

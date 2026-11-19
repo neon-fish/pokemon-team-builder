@@ -31,4 +31,7 @@ class PackageHttpTransport implements HttpTransport {
       body: utf8.decode(response.bodyBytes, allowMalformed: true),
     );
   }
+
+  /// Releases the underlying connection. Call when the transport is discarded.
+  void close() => _client.close();
 }

@@ -110,3 +110,15 @@ Material as the structural base (scaffold, text fields, dialogs, navigation), he
 - **Flutter version.** The project targets Flutter 3.50 (Material is the separate `material_ui` package). The README must state the version.
 - **Fan-out.** Showing rich data means one detail request per Pokémon. The limiter and cache keep this under control; this needs to be verified, not assumed.
 - **Public repo hygiene.** Keep the repo, project, and docs free of any reference to any documents or parties that it shouldn't.
+
+## 6. Progress
+
+- [x] Project setup: dependencies, strict lints, folder skeleton, `AGENTS.md`, decision log.
+- [x] API stack, minus the cache: typed failures and `Result`, transport, fault injector, status/JSON handling, retry with backoff, concurrency limiter. Unit tested with a fake clock.
+- [x] Composition root (`lib/app/providers.dart`) and a **temporary** scratch screen (`lib/app/scratch_home.dart`) with a button that calls the real API through the full stack. To be deleted once the real UI exists.
+- [ ] Caching layer: TTL, in-flight de-duplication, stale-while-revalidate, `KeyValueStore`.
+- [ ] Models and repositories with defensive parsing; fixtures for tests.
+- [ ] Domain: type chart and team analysis.
+- [ ] UI: theme, search, team, analysis, compare.
+- [ ] Control panel UI (the levers' state already exists as `faultSettingsProvider`).
+- [ ] README: setup, decisions, QA approach, manual test plan, known limitations.
