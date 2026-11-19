@@ -6,6 +6,7 @@ import 'package:pokemon_team_builder/domain/pokemon_type.dart';
 
 import '../support/fake_api_client.dart';
 import '../support/fixtures.dart';
+import '../support/real_type_chart.dart';
 
 /// A `/type/{name}` response listing the given matchups.
 Map<String, Object?> typeResponse({
@@ -122,6 +123,32 @@ void main() {
       expect(chart.multiplier(PokemonType.fire, PokemonType.water), 0.5);
       expect(chart.multiplier(PokemonType.normal, PokemonType.ghost), 0);
       expect(chart.multiplier(PokemonType.water, PokemonType.fire), 1);
+    });
+
+    test('the real data has all eight immunities, and no others', () async {
+      final chart = await loadRealTypeChart();
+      const immunities = {
+        PokemonType.normal: PokemonType.ghost,
+        PokemonType.fighting: PokemonType.ghost,
+        PokemonType.poison: PokemonType.steel,
+        PokemonType.ground: PokemonType.flying,
+        PokemonType.ghost: PokemonType.normal,
+        PokemonType.electric: PokemonType.ground,
+        PokemonType.psychic: PokemonType.dark,
+        PokemonType.dragon: PokemonType.fairy,
+      };
+
+      var zeroes = 0;
+      for (final attacking in PokemonType.values) {
+        for (final defending in PokemonType.values) {
+          if (chart.multiplier(attacking, defending) == 0) zeroes++;
+        }
+      }
+
+      expect(zeroes, immunities.length);
+      immunities.forEach((attacking, defending) {
+        expect(chart.multiplier(attacking, defending), 0);
+      });
     });
 
     test('requests the documented URL for each type', () async {
