@@ -8,6 +8,9 @@ import 'package:pokemon_team_builder/data/http/http_transport.dart';
 import 'package:pokemon_team_builder/data/http/package_http_transport.dart';
 import 'package:pokemon_team_builder/data/http_api_client.dart';
 import 'package:pokemon_team_builder/data/retrying_api_client.dart';
+import 'package:pokemon_team_builder/data/storage/key_value_store.dart';
+import 'package:pokemon_team_builder/data/storage/shared_preferences_key_value_store.dart';
+import 'package:pokemon_team_builder/data/team_repository.dart';
 
 /// Holds the current fault-injection levers. Nothing drives it yet; the control
 /// panel will. Tests and the panel change it with `update`.
@@ -22,6 +25,15 @@ final faultSettingsProvider =
     NotifierProvider<FaultSettingsNotifier, FaultSettings>(
       FaultSettingsNotifier.new,
     );
+
+/// Where the team is saved. Tests override this with an in-memory store.
+final keyValueStoreProvider = Provider<KeyValueStore>(
+  (ref) => SharedPreferencesKeyValueStore(),
+);
+
+final teamRepositoryProvider = Provider<TeamRepository>(
+  (ref) => TeamRepository(ref.watch(keyValueStoreProvider)),
+);
 
 /// The real network connection. Tests override this with a fake transport so
 /// the whole stack above it can be exercised without the network.
