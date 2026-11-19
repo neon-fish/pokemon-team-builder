@@ -1,11 +1,10 @@
-import 'package:pokemon_team_builder/core/api_failure.dart';
 import 'package:pokemon_team_builder/core/result.dart';
 import 'package:pokemon_team_builder/data/api_client.dart';
 import 'package:pokemon_team_builder/data/json_reader.dart';
+import 'package:pokemon_team_builder/data/parse_result.dart';
+import 'package:pokemon_team_builder/data/poke_api.dart';
 import 'package:pokemon_team_builder/domain/pokemon_type.dart';
 import 'package:pokemon_team_builder/domain/type_chart.dart';
-
-const _baseUrl = 'https://pokeapi.co/api/v2';
 
 /// Builds the [TypeChart] from the API: one request per type, 18 in all.
 ///
@@ -41,18 +40,9 @@ class TypeChartRepository {
     PokemonType type,
   ) async {
     final result = await _client.getJson(
-      Uri.parse('$_baseUrl/type/${type.name}'),
+      Uri.parse('$pokeApiBaseUrl/type/${type.name}'),
     );
-    switch (result) {
-      case Err(failure: final failure):
-        return Err(failure);
-      case Ok(value: final value):
-        try {
-          return Ok(parseAttackMultipliers(value));
-        } on FormatException catch (e) {
-          return Err(MalformedResponseFailure(e.message));
-        }
-    }
+    return parseResult(result, parseAttackMultipliers);
   }
 }
 

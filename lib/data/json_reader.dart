@@ -17,6 +17,12 @@ List<Object?> asJsonList(Object? json, String what) {
   throw FormatException('Expected $what to be a list');
 }
 
+/// [json] as a whole number.
+int asJsonInt(Object? json, String what) {
+  if (json is int) return json;
+  throw FormatException('Expected $what to be a whole number');
+}
+
 /// [json] as a string.
 String asJsonString(Object? json, String what) {
   if (json is String) return json;

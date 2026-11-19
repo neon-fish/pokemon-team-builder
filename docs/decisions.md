@@ -142,3 +142,10 @@ Format: **Decision**, **Options considered**, **Why**, **Trade-offs / revisit if
 - **Forward compatibility:** values we do not model (for example the `stellar` type) are skipped rather than treated as errors, so a new entry in the API cannot break the app. A wrong *shape* (a missing list, a string where an object should be) is an error.
 - **Fixtures:** `test/fixtures/` holds trimmed copies of real responses, loaded by `loadFixture`. A later opt-in live test can check they still match the real API.
 - **Layering:** `PokemonType` and `TypeChart` live in `lib/domain` as plain Dart. The data layer knows about them, never the other way round.
+
+### D16 addendum: the Pokémon detail
+
+- **`parseResult`** (`lib/data/parse_result.dart`) is the single place a `FormatException` becomes a `MalformedResponseFailure`. It was written when the second repository needed the same step, which is the point at which the earlier "no `Result.map` until needed" rule said to add it.
+- **Required vs cosmetic fields.** Id, name, types and stats are required: if one is missing or the wrong kind, the whole Pokémon is rejected. The picture is cosmetic: the official artwork is preferred, then the small sprite, else none, and a missing or odd `sprites` field never fails the Pokémon. Real data forced this: some form variants have artwork but no small sprite, and a few have neither.
+- **Types.** Only current `types` are read (the API also returns `past_types` for older games). Unknown names are skipped; a Pokémon with no recognised type is rejected.
+- **Fixtures** are trimmed real responses: Pikachu (single type), and two Koraidon forms (dual type; no picture; artwork only).
