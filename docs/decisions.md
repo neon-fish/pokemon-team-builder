@@ -110,7 +110,7 @@ Format: **Decision**, **Options considered**, **Why**, **Trade-offs / revisit if
 
 - **Decision:** Retry delays, timeouts and (to come) cache TTLs are tested with `fake_async`, and randomness (jitter, fault selection) is injected as a `Random`.
 - **Why:** The suite stays fast and deterministic; exact timings can be asserted (for example, no second request at 499 ms and one at 500 ms).
-- **Note:** `DateTime.now()` is not controlled by `fake_async`. The cache will need an injectable clock (likely `package:clock`).
+- **Note:** `DateTime.now()` is not controlled by `fake_async`, so the cache takes a `now` function (see D15) rather than a clock package.
 
 ## D14. Composition root: `lib/app/providers.dart`
 
@@ -120,3 +120,16 @@ Format: **Decision**, **Options considered**, **Why**, **Trade-offs / revisit if
 - **Two override points:** widget tests that do not care about the network replace `apiClientProvider` with a fake `ApiClient`. Tests of the stack itself replace `httpTransportProvider` with a fake transport, so the real wiring (layer order, fault levers, retries) is exercised without the network.
 - **Lifetime:** the stack is a single long-lived instance, because the limiter's queue and the future cache are state. The real transport is closed when its provider is disposed.
 - **Fault injection is always in the stack.** With `FaultSettings.none` it is a pass-through. It is a deliberate feature (it makes resilience demonstrable), and the control panel UI is the part to gate behind a flag.
+
+## D15. Cache: in memory, with stale-while-revalidate
+
+- **Decision:** `CachingApiClient` is the outermost layer. It keeps successful responses in memory with a time-to-live (10 minutes), serves slightly older data instantly while refreshing in the background (up to 1 hour past the TTL), shares one network call between simultaneous requests for the same URL, and keeps at most 200 entries (oldest dropped first). Failures are never cached.
+- **Options considered:**
+  - Persist the cache in `KeyValueStore` (`localStorage`). Rejected for now: the limit is about 5 MB and a single Pokémon response is large, so it would fill up and then fail. The browser's own HTTP cache already honours PokeAPI's `max-age=86400`, so a reload is cheap anyway.
+  - `package:clock` for time. Rejected: a plain `DateTime Function() now` constructor parameter does the same job with no dependency, and the cache tests only need to move time by hand.
+- **Why:** The cache sits outside the concurrency limiter so a hit never takes a slot. Stale-while-revalidate means the UI is never blocked on a refresh, and a failed refresh quietly keeps the old data, which is also what makes the app usable during a brief outage.
+- **Known limitations:**
+  - Cached JSON maps are shared, so a caller that mutated one would change it for everyone. Repositories turn them into immutable models straight away.
+  - Eviction is by age of storage, not by last use.
+  - Nothing is remembered across a page reload. Small, valuable data (the team, perhaps the type chart) will be persisted by the repositories that own it.
+  - There is no `clear` yet; it is added when the control panel needs it.

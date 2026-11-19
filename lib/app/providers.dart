@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pokemon_team_builder/data/api_client.dart';
+import 'package:pokemon_team_builder/data/caching_api_client.dart';
 import 'package:pokemon_team_builder/data/concurrency_limited_api_client.dart';
 import 'package:pokemon_team_builder/data/http/fault_injecting_transport.dart';
 import 'package:pokemon_team_builder/data/http/fault_settings.dart';
@@ -33,10 +34,10 @@ final httpTransportProvider = Provider<HttpTransport>((ref) {
 /// The composition root for networking: assembles the decorator stack.
 ///
 /// Inner to outer: real transport, fault injection, status/JSON handling,
-/// retries, concurrency limit. (Caching joins at the outside later.)
+/// retries, concurrency limit, cache.
 ///
-/// This must stay a single long-lived instance: the limiter's queue and, later,
-/// the cache are state. Widget tests that do not care about the stack replace
+/// This must stay a single long-lived instance: the limiter's queue and the
+/// cache are state. Widget tests that do not care about the stack replace
 /// this provider with a fake [ApiClient]; tests of the stack itself override
 /// [httpTransportProvider] instead.
 final apiClientProvider = Provider<ApiClient>((ref) {
@@ -46,7 +47,7 @@ final apiClientProvider = Provider<ApiClient>((ref) {
     // request, so changing a lever never rebuilds the whole stack.
     settings: () => ref.read(faultSettingsProvider),
   );
-  return ConcurrencyLimitedApiClient(
-    RetryingApiClient(HttpApiClient(transport)),
+  return CachingApiClient(
+    ConcurrencyLimitedApiClient(RetryingApiClient(HttpApiClient(transport))),
   );
 });

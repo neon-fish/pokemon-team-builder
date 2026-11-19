@@ -35,6 +35,21 @@ void main() {
     });
   });
 
+  test('a repeated request is answered from the cache', () {
+    fakeAsync((async) {
+      final transport = FakeTransport([
+        okJson({'name': 'eevee'}),
+      ]);
+      final client = containerWith(transport).read(apiClientProvider);
+
+      settle(async, client.getJson(url));
+      final again = settle(async, client.getJson(url));
+
+      expect(again.valueOrNull, {'name': 'eevee'});
+      expect(transport.calls, hasLength(1));
+    });
+  });
+
   test('a brief outage is retried and the caller gets the answer', () {
     fakeAsync((async) {
       final transport = FakeTransport([status(503), okJson('back')]);
