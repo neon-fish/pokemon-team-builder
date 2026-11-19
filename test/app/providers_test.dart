@@ -1,0 +1,112 @@
+import 'package:fake_async/fake_async.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:pokemon_team_builder/app/providers.dart';
+import 'package:pokemon_team_builder/core/api_failure.dart';
+import 'package:pokemon_team_builder/core/result.dart';
+import 'package:pokemon_team_builder/data/http/fault_settings.dart';
+
+import '../support/fake_transport.dart';
+
+/// Tests the networking stack exactly as the app assembles it, with only the
+/// real network swapped for a fake transport.
+void main() {
+  final url = Uri.parse('https://example.test/thing');
+
+  ProviderContainer containerWith(FakeTransport transport) {
+    final container = ProviderContainer(
+      overrides: [httpTransportProvider.overrideWithValue(transport)],
+    );
+    addTearDown(container.dispose);
+    return container;
+  }
+
+  test('a request flows through the whole stack to the transport', () {
+    fakeAsync((async) {
+      final transport = FakeTransport([
+        okJson({'name': 'eevee'}),
+      ]);
+      final client = containerWith(transport).read(apiClientProvider);
+
+      final result = settle(async, client.getJson(url));
+
+      expect(result.valueOrNull, {'name': 'eevee'});
+      expect(transport.calls, [url]);
+    });
+  });
+
+  test('a brief outage is retried and the caller gets the answer', () {
+    fakeAsync((async) {
+      final transport = FakeTransport([status(503), okJson('back')]);
+      final client = containerWith(transport).read(apiClientProvider);
+
+      final result = settle(async, client.getJson(url));
+
+      expect(result.valueOrNull, 'back');
+      expect(transport.calls, hasLength(2));
+    });
+  });
+
+  test('a missing resource is reported once, without retries', () {
+    fakeAsync((async) {
+      final transport = FakeTransport([status(404)]);
+      final client = containerWith(transport).read(apiClientProvider);
+
+      final result = settle(async, client.getJson(url));
+
+      expect(result.failureOrNull, isA<NotFoundFailure>());
+      expect(transport.calls, hasLength(1));
+    });
+  });
+
+  group('fault levers', () {
+    test('reach the stack and take effect live', () {
+      fakeAsync((async) {
+        final transport = FakeTransport();
+        final container = containerWith(transport);
+        final client = container.read(apiClientProvider);
+
+        container
+            .read(faultSettingsProvider.notifier)
+            .update(const FaultSettings(failureRate: 1));
+        final failed = settle(async, client.getJson(url));
+        expect(failed.failureOrNull, isA<ServerFailure>());
+        expect(transport.calls, isEmpty, reason: 'faults replace the call');
+
+        container
+            .read(faultSettingsProvider.notifier)
+            .update(FaultSettings.none);
+        final recovered = settle(async, client.getJson(url));
+        expect(recovered, isA<Ok<Object?>>());
+        expect(transport.calls, hasLength(1));
+      });
+    });
+
+    test('the offline switch surfaces as an offline failure', () {
+      fakeAsync((async) {
+        final container = containerWith(FakeTransport());
+        container
+            .read(faultSettingsProvider.notifier)
+            .update(const FaultSettings(offline: true));
+
+        final result = settle(
+          async,
+          container.read(apiClientProvider).getJson(url),
+        );
+
+        expect(result.failureOrNull, isA<OfflineFailure>());
+      });
+    });
+
+    test('changing a lever does not rebuild the stack', () {
+      final container = containerWith(FakeTransport());
+      final before = container.read(apiClientProvider);
+
+      container
+          .read(faultSettingsProvider.notifier)
+          .update(const FaultSettings(latency: Duration(seconds: 1)));
+
+      expect(container.read(apiClientProvider), same(before));
+    });
+  });
+}
