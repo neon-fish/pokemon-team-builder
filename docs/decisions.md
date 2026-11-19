@@ -133,3 +133,12 @@ Format: **Decision**, **Options considered**, **Why**, **Trade-offs / revisit if
   - Eviction is by age of storage, not by last use.
   - Nothing is remembered across a page reload. Small, valuable data (the team, perhaps the type chart) will be persisted by the repositories that own it.
   - There is no `clear` yet; it is added when the control panel needs it.
+
+## D16. Defensive parsing: small hand-written readers, one exception type, caught at the repository
+
+- **Decision:** API JSON is read with small helpers in `lib/data/json_reader.dart` (`asJsonObject`, `asJsonList`, `asJsonString`). Each checks one expectation and throws a `FormatException` saying what was wrong. A repository catches that one exception type around its parsing and returns `Err(MalformedResponseFailure(...))`. The UI never sees the exception.
+- **Options considered:** `json_serializable` / `freezed` (code generation, extra dependencies, and generated casts that throw unhelpful errors); parse functions that return `Result` at every step (more ceremony for no extra safety here).
+- **Why:** Plain functions can be read and explained line by line. Throwing inside the parse step and catching at a single boundary keeps the parsing code short, while the public API of every repository still follows D11 (failures are values).
+- **Forward compatibility:** values we do not model (for example the `stellar` type) are skipped rather than treated as errors, so a new entry in the API cannot break the app. A wrong *shape* (a missing list, a string where an object should be) is an error.
+- **Fixtures:** `test/fixtures/` holds trimmed copies of real responses, loaded by `loadFixture`. A later opt-in live test can check they still match the real API.
+- **Layering:** `PokemonType` and `TypeChart` live in `lib/domain` as plain Dart. The data layer knows about them, never the other way round.
