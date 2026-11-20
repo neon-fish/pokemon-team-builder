@@ -123,7 +123,8 @@ Material as the structural base (scaffold, text fields, dialogs, navigation), he
 - [x] Search index: `PokemonSummary`, `PokemonIndexRepository` (one request, ids parsed from URLs).
 - [x] Team: `Team` rules, `KeyValueStore` (`shared_preferences`), `TeamRepository`, `TeamNotifier` (D17).
 - [x] Team analysis (domain): `analyseTeam`, `TypeMatchup`, tested against the real type chart (D18).
-- [ ] State for the rest: providers for the type chart, search index and Pokémon details; the team analysis provider.
+- [x] State: `pokemonProvider` (family), `typeChartProvider`, `teamAnalysisProvider` with `Loading` / `Unavailable` / `Ready` states (D19).
+- [ ] Search state (index provider and query), added with the search UI.
 - [ ] Domain: type chart and team analysis.
 - [ ] UI: theme, search, team, analysis, compare.
 - [ ] Control panel UI (the levers' state already exists as `faultSettingsProvider`).

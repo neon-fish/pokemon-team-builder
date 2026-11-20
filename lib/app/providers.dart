@@ -7,10 +7,12 @@ import 'package:pokemon_team_builder/data/http/fault_settings.dart';
 import 'package:pokemon_team_builder/data/http/http_transport.dart';
 import 'package:pokemon_team_builder/data/http/package_http_transport.dart';
 import 'package:pokemon_team_builder/data/http_api_client.dart';
+import 'package:pokemon_team_builder/data/pokemon_repository.dart';
 import 'package:pokemon_team_builder/data/retrying_api_client.dart';
 import 'package:pokemon_team_builder/data/storage/key_value_store.dart';
 import 'package:pokemon_team_builder/data/storage/shared_preferences_key_value_store.dart';
 import 'package:pokemon_team_builder/data/team_repository.dart';
+import 'package:pokemon_team_builder/data/type_chart_repository.dart';
 
 /// Holds the current fault-injection levers. Nothing drives it yet; the control
 /// panel will. Tests and the panel change it with `update`.
@@ -63,3 +65,11 @@ final apiClientProvider = Provider<ApiClient>((ref) {
     ConcurrencyLimitedApiClient(RetryingApiClient(HttpApiClient(transport))),
   );
 });
+
+final pokemonRepositoryProvider = Provider<PokemonRepository>(
+  (ref) => PokemonRepository(ref.watch(apiClientProvider)),
+);
+
+final typeChartRepositoryProvider = Provider<TypeChartRepository>(
+  (ref) => TypeChartRepository(ref.watch(apiClientProvider)),
+);
