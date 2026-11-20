@@ -48,6 +48,29 @@ void main() {
     expect(slotsIn(container), [25, null, null, null, null, null]);
   });
 
+  test('adding at a slot fills that slot and saves the team', () async {
+    final store = InMemoryKeyValueStore();
+    final container = appWith(store);
+    await container.read(teamProvider.future);
+
+    await container.read(teamProvider.notifier).addAt(3, 7);
+
+    expect(slotsIn(container), [null, null, null, 7, null, null]);
+    expect(store.data['team'], '{"ids":[null,null,null,7,null,null]}');
+  });
+
+  test('adding at a slot that is taken leaves it alone, unsaved', () async {
+    final store = InMemoryKeyValueStore({'team': '{"ids":[1]}'});
+    final container = appWith(store);
+    await container.read(teamProvider.future);
+
+    await container.read(teamProvider.notifier).addAt(0, 9);
+
+    expect(slotsIn(container), [1, null, null, null, null, null]);
+    // Still the text that was there before: nothing was written.
+    expect(store.data['team'], '{"ids":[1]}');
+  });
+
   test('adding fills a gap left by an earlier removal', () async {
     final container = appWith(
       InMemoryKeyValueStore({'team': '{"ids":[1,2,3]}'}),
@@ -130,6 +153,10 @@ void main() {
 
       expect(store.data, isEmpty);
     }
+
+    test('adding at a slot that does not exist', () {
+      return expectNothingSaved((notifier) => notifier.addAt(6, 9));
+    });
 
     test('removing a slot that does not exist', () {
       return expectNothingSaved((notifier) => notifier.removeAt(99));

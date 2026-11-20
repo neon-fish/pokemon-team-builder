@@ -86,6 +86,58 @@ void main() {
     });
   });
 
+  group('addAt', () {
+    test('fills the chosen slot, not the first empty one', () {
+      final team = const Team().addAt(3, 9);
+
+      expect(team.slots, [null, null, null, 9, null, null]);
+    });
+
+    test('leaves every other slot where it is', () {
+      final team = Team.fromSlots([1, 2, 3]).addAt(4, 9);
+
+      expect(team.slots, [1, 2, 3, null, 9, null]);
+    });
+
+    test('a later add still uses the first empty slot', () {
+      final team = const Team().addAt(3, 9).add(1);
+
+      expect(team.slots, [1, null, null, 9, null, null]);
+    });
+
+    test('the same Pokémon can be put in a second slot', () {
+      final team = Team.fromSlots([4]).addAt(1, 4);
+
+      expect(team.slots, [4, 4, null, null, null, null]);
+    });
+
+    test('leaves the original team alone', () {
+      final original = Team.fromSlots([1]);
+      original.addAt(2, 9);
+
+      expect(original.slots, [1, null, null, null, null, null]);
+    });
+
+    test('does not overwrite a slot that is taken', () {
+      final team = Team.fromSlots([1, 2]);
+
+      expect(team.addAt(1, 9), same(team));
+    });
+
+    test('ignores a slot that does not exist', () {
+      final team = Team.fromSlots([1]);
+
+      expect(team.addAt(6, 9), same(team));
+      expect(team.addAt(-1, 9), same(team));
+    });
+
+    test('ignores a full team', () {
+      final full = Team.fromSlots([1, 2, 3, 4, 5, 6]);
+
+      expect(full.addAt(0, 9), same(full));
+    });
+  });
+
   group('removeAt', () {
     test('empties that slot and nothing else moves', () {
       final team = Team.fromSlots([1, 2, 3]);
