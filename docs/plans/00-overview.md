@@ -13,7 +13,7 @@ The user searches for Pokémon, adds them to a team, and the dashboard answers o
 | Area | What it does |
 |---|---|
 | **Search & browse** | Fast local search over the full Pokémon index (one request, searched client-side). Results show sprite, name, types. |
-| **Team** | Six slots. Add, remove, persist across reloads. |
+| **Team** | Six fixed slots (any may be empty). Add, remove, reorder by dragging, persist across reloads. |
 | **Coverage analysis** | For each of the 18 attacking types: how many teammates are weak to it, resist it, or are immune. Gaps are flagged in plain language ("3 of 6 are weak to Ground and nobody resists it"). |
 | **Stat breakdown** | Team totals and spread by stat; breakdown by type. |
 | **Compare** | Two or more selected Pokémon side by side, with a custom-painted radar chart. |
@@ -25,7 +25,7 @@ A list-and-detail Pokédex is the obvious demo. The product here is analytical: 
 
 ### Data (PokeAPI, keyless, CORS-enabled)
 
-- `GET /pokemon?limit=1400`: the name and ID index, fetched once and cached.
+- `GET /pokemon?limit=5000`: the name and ID index (about 1,350 entries today), fetched once and cached.
 - `GET /pokemon/{id}`: types, base stats, sprites.
 - `GET /type/{name}`: damage relations. All 18 are fetched on first analysis and cached.
 
@@ -125,7 +125,6 @@ Material as the structural base (scaffold, text fields, dialogs, navigation), he
 - [x] Team analysis (domain): `analyseTeam`, `TypeMatchup`, tested against the real type chart (D18).
 - [x] State: `pokemonProvider` (family), `typeChartProvider`, `teamAnalysisProvider` with `Loading` / `Unavailable` / `Ready` states (D19).
 - [ ] Search state (index provider and query), added with the search UI.
-- [ ] Domain: type chart and team analysis.
-- [ ] UI: theme, search, team, analysis, compare.
+- [ ] UI, in the order set out in [01-ui.md](01-ui.md): theme (light, dark, system), sparse six-slot team (D20), search and team slots, reordering (D21), coverage matrix, then the control panel, then animation and the flip detail dialog (D22), then compare.
 - [ ] Control panel UI (the levers' state already exists as `faultSettingsProvider`).
 - [ ] README: setup, decisions, QA approach, manual test plan, known limitations.

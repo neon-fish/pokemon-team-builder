@@ -159,6 +159,8 @@ Format: **Decision**, **Options considered**, **Why**, **Trade-offs / revisit if
 
 ## D17. The team: persistence, state and what "a team" means
 
+*Partly superseded by D20: the team is now six fixed slots that may be empty, so removal no longer shifts later members along. The rest of this entry (persistence, state, no lost updates) still stands.*
+
 - **Team rules (domain).** Up to six slots, ordered. The same Pokémon may fill several slots, as in the games. (The first version refused duplicates on the grounds that they add nothing to a coverage analysis; that was reversed: stacking one weakness six times is exactly what the analysis should reveal, and a team of six identical Pokémon makes a good demonstration.) `Team` is immutable and holds ids only; details are loaded separately. `add` and `removeAt` return the same object when nothing changes, which lets the notifier skip a pointless save.
 - **Removal is by slot position, not by id,** because an id can now appear more than once. The UI should key slots by position too, and cannot use "already in the team" to disable adding.
 - **Storage.** `KeyValueStore` is a two-method interface (`read`, `write`), implemented by `SharedPreferencesKeyValueStore` (which on the web is `localStorage`). It uses the newer `SharedPreferencesAsync` API, so there is no instance to initialise at start-up. The cache stays in memory (D15); only the team is persisted, because it is small and it is the user's own data.
@@ -185,3 +187,30 @@ Format: **Decision**, **Options considered**, **Why**, **Trade-offs / revisit if
 - **Families:** `pokemonProvider(id)` is one provider per id, remembered, so a Pokémon shown in several places (or several times in a team) is loaded once.
 - **Team analysis state** is a sealed `TeamAnalysisState`: `Loading`, `Unavailable(failure)` (the type chart failed) or `Ready(matchups, missingCount)`. Members that are still loading or failed are counted in `missingCount` and left out of the analysis, never silently ignored, because a team that looks safe may only be missing a member. Each slot shows its own loading or error state by watching its own `pokemonProvider(id)`.
 - **Not built yet, on purpose:** a provider for the search index. It has no caller until the search UI exists.
+
+## D20. The team is six fixed slots, and a slot may be empty
+
+- **Decision:** `Team` holds exactly six slots, each an id or empty. `add` fills the first empty slot, `removeAt(i)` empties slot `i` and nothing else moves. The UI always shows six slots.
+- **Options considered:** keep the compact list (removal shifts later members left) and make the UI cope; fixed slots with the list still compacting.
+- **Why:** With a compact list, removing slot 2 changes what every later slot shows, so the UI cannot tell "a Pokémon was added" from "the slots shifted". That matters for the throw-in animation, for Hero tags and for reordering. A sparse list gives each slot a stable identity, so animations, drag targets and tags can all be keyed by slot position. Empty slots are always on screen, so they invite a click to add and give the throw a target.
+- **Storage:** `{"ids":[25,null,6,null,null,null]}`. Loading is defensive: anything that is not a whole number becomes an empty slot and entries past six are dropped, so old compact saves (`[25,6]`) load as the first two slots, and a hand-edited value cannot give a seventh Pokémon.
+- **Analysis:** skips empty slots. `missingCount` counts only members that are loading or failed.
+- **Trade-offs:** team order is now meaningful and may have gaps (the first slot acts as the "lead"). Adding always uses the first empty slot; choosing a particular slot is not supported, which can be added later if wanted.
+
+## D21. Reordering swaps two slots; others do not shuffle along
+
+- **Decision:** Dragging a card onto another slot exchanges the two (dropping on an empty slot moves the card). `Team.move(from, to)` is the domain rule. Built with `Draggable` and `DragTarget`, which start a drag only after a small movement.
+- **Options considered:** insert-and-shift with the other cards animating out of the way (as `ReorderableListView` does).
+- **Why:** Shuffling conflicts with fixed slots (D20) and is hard in a layout that changes between a row, a grid and a stack. Swapping is simple to explain, test and make accessible.
+- **Accessibility:** dragging is not reachable by keyboard or screen reader, so cards expose "move earlier / later" semantics actions and the detail dialog has the same buttons.
+- **Consequence for animation:** the throw plays on add and on loading the saved team, never because a slot became filled, or dragging into an empty slot would throw a ball. The state layer records which slots have just arrived.
+- **Known limitation:** no shuffle-along animation.
+
+## D22. UI direction: themes, animation and reduced motion
+
+- **Themes:** light, dark and system (follows the browser), persisted through `KeyValueStore`. The saved choice is read before the first frame so there is no flash of the wrong theme. This is an exception to the "start-up loads inside a notifier" approach of D17, because the theme is needed for the first frame and the team is not.
+- **Animation:** a drawn pokéball thrown into the slot, a flash, then the card is revealed once a minimum time has passed and the data has loaded; selecting a card flips and grows it into a detail dialog (`Hero` with a custom shuttle). All custom-painted with no image assets. Built after the control panel so the resilience demonstration is complete first.
+- **Reduced motion:** when the system asks for less animation, the throw and flip are skipped; cards appear at once and the dialog fades.
+- **Failure during a throw:** a failed load opens to an error card with a retry, never a stuck ball.
+- **Fallback:** if the flip proves unreliable, the detail becomes a grow-and-fade dialog.
+- See [plans/01-ui.md](plans/01-ui.md) for layout, build order and testing.
