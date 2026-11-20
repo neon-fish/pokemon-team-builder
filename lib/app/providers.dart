@@ -13,6 +13,7 @@ import 'package:pokemon_team_builder/data/storage/key_value_store.dart';
 import 'package:pokemon_team_builder/data/storage/shared_preferences_key_value_store.dart';
 import 'package:pokemon_team_builder/data/team_repository.dart';
 import 'package:pokemon_team_builder/data/type_chart_repository.dart';
+import 'package:pokemon_team_builder/features/theme/theme_mode_repository.dart';
 
 /// Holds the current fault-injection levers. Nothing drives it yet; the control
 /// panel will. Tests and the panel change it with `update`.
@@ -35,6 +36,10 @@ final keyValueStoreProvider = Provider<KeyValueStore>(
 
 final teamRepositoryProvider = Provider<TeamRepository>(
   (ref) => TeamRepository(ref.watch(keyValueStoreProvider)),
+);
+
+final themeModeRepositoryProvider = Provider<ThemeModeRepository>(
+  (ref) => ThemeModeRepository(ref.watch(keyValueStoreProvider)),
 );
 
 /// The real network connection. Tests override this with a fake transport so

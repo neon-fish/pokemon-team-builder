@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:pokemon_team_builder/app/providers.dart';
 import 'package:pokemon_team_builder/core/result.dart';
+import 'package:pokemon_team_builder/features/theme/theme_mode_picker.dart';
 
 /// TEMPORARY. A throwaway screen for exercising the API stack by hand. It will
 /// be replaced by the real UI.
@@ -53,7 +54,10 @@ class _ScratchHomeState extends ConsumerState<ScratchHome> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Pokémon Team Builder')),
+      appBar: AppBar(
+        title: const Text('Pokémon Team Builder'),
+        actions: const [ThemeModePicker(), SizedBox(width: 16)],
+      ),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(24),

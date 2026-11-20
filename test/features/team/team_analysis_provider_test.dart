@@ -115,7 +115,8 @@ void main() {
   });
 
   test(
-    'a member that fails to load is counted as missing, not hidden', () async {
+    'a member that fails to load is counted as missing, not hidden',
+    () async {
       pokemonFails = true;
       final app = appWithTeam([_pikachu]);
 
