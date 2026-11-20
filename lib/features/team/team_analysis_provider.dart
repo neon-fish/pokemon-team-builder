@@ -58,7 +58,8 @@ final teamAnalysisProvider = Provider<TeamAnalysisState>((ref) {
     case Ok(value: final chart):
       final memberTypes = <List<PokemonType>>[];
       var missingCount = 0;
-      for (final id in team.ids) {
+      // Empty slots are not members, so they are not "missing" either.
+      for (final id in team.memberIds) {
         final pokemon = ref.watch(pokemonProvider(id)).value?.valueOrNull;
         if (pokemon == null) {
           missingCount++;

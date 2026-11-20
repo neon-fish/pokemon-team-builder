@@ -9,6 +9,9 @@ import 'package:pokemon_team_builder/domain/team.dart';
 /// Persistence is best effort. If storage is unavailable (for example a browser
 /// with site data blocked) or holds something unreadable, loading gives an
 /// empty team and saving does nothing, so the app still works for the session.
+///
+/// Saved as JSON with one entry per slot, `null` for an empty one:
+/// `{"ids":[25,null,6,null,null,null]}`.
 class TeamRepository {
   TeamRepository(this._store);
 
@@ -35,7 +38,7 @@ class TeamRepository {
 
   Future<void> save(Team team) async {
     try {
-      await _store.write(_key, jsonEncode({'ids': team.ids}));
+      await _store.write(_key, jsonEncode({'ids': team.slots}));
     } on Object {
       // Best effort. See the class comment.
     }
@@ -45,13 +48,15 @@ class TeamRepository {
   /// [save] writes.
   Team _decode(String saved) {
     final object = asJsonObject(jsonDecode(saved), 'the saved team');
-    final ids = asJsonList(object['ids'], 'ids').whereType<int>();
+    final entries = asJsonList(object['ids'], 'ids');
 
-    // Rebuild through `add`, so the six-slot limit applies to saved data too.
-    var team = const Team();
-    for (final id in ids) {
-      team = team.add(id);
-    }
-    return team;
+    // Each saved slot is an id or empty; anything else (text, a decimal) is
+    // treated as empty. `fromSlots` pads or cuts the list to exactly six, so
+    // neither an old save with fewer entries nor a hand-edited one with more
+    // can make the wrong size of team.
+    return Team.fromSlots([
+      for (final entry in entries)
+        if (entry is int) entry else null,
+    ]);
   }
 }

@@ -196,6 +196,11 @@ Format: **Decision**, **Options considered**, **Why**, **Trade-offs / revisit if
 - **Storage:** `{"ids":[25,null,6,null,null,null]}`. Loading is defensive: anything that is not a whole number becomes an empty slot and entries past six are dropped, so old compact saves (`[25,6]`) load as the first two slots, and a hand-edited value cannot give a seventh Pokémon.
 - **Analysis:** skips empty slots. `missingCount` counts only members that are loading or failed.
 - **Trade-offs:** team order is now meaningful and may have gaps (the first slot acts as the "lead"). Adding always uses the first empty slot; choosing a particular slot is not supported, which can be added later if wanted.
+- **As built:**
+  - `Team.slots` is a `List<int?>` that is always six long. `const Team()` is six empty slots; `Team.fromSlots(list)` pads a short list with empty slots and cuts a long one, so it is the single place that enforces the size (used by loading saved data). `memberIds` gives the filled slots' ids in order, for the analysis.
+  - `add`, `removeAt` and `move(from, to)` return the same object when they change nothing, so the notifier skips the save. `move` is a plain exchange; moving to an empty slot is the same operation, because the other slot is empty. Swapping two empty slots, or two slots holding the same Pokémon, counts as no change.
+  - Saved data is positional, so a value that is not a whole number leaves its own slot empty without shifting the others (the earlier version skipped such values and closed the gap).
+  - The analysis iterates `memberIds`, so an empty slot is not counted as a missing member.
 
 ## D21. Reordering swaps two slots; others do not shuffle along
 

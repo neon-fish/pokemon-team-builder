@@ -12,12 +12,22 @@ class TeamNotifier extends AsyncNotifier<Team> {
   @override
   Future<Team> build() => ref.watch(teamRepositoryProvider).load();
 
-  /// Adds a Pokémon to the team and saves it. If the team is full, does nothing.
+  /// Puts a Pokémon in the first empty slot and saves the team. If the team is
+  /// full, does nothing.
   Future<void> add(int id) => _change((team) => team.add(id));
 
-  /// Removes a Pokémon from the team and saves it. If the Pokémon is not on the
-  /// team, does nothing.
+  /// Puts a Pokémon in a specific slot and saves the team. If that slot is
+  /// already occupied, or if the index is out of range, does
+  /// nothing.
+  Future<void> addAt(int index, int id) => _change((team) => team.addAt(index, id));
+
+  /// Empties a slot and saves the team. If there is no such slot, or it is
+  /// already empty, does nothing.
   Future<void> removeAt(int index) => _change((team) => team.removeAt(index));
+
+  /// Swaps two slots (or moves a Pokémon into an empty one) and saves the team.
+  /// If that would change nothing, does nothing.
+  Future<void> move(int from, int to) => _change((team) => team.move(from, to));
 
   Future<void> _change(Team Function(Team team) change) async {
     // Make sure the saved team has loaded before changing anything.

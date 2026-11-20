@@ -39,8 +39,8 @@ void main() {
     });
   });
 
-  /// An app whose saved team is [ids].
-  ProviderContainer appWithTeam(List<int> ids) {
+  /// An app whose saved team is [ids], one entry per slot (`null` is empty).
+  ProviderContainer appWithTeam(List<int?> ids) {
     final container = ProviderContainer(
       overrides: [
         apiClientProvider.overrideWithValue(api),
@@ -59,7 +59,7 @@ void main() {
     await app.read(typeChartProvider.future);
     // Reading the analysis is what starts loading each member.
     app.read(teamAnalysisProvider);
-    for (final id in app.read(teamProvider).requireValue.ids) {
+    for (final id in app.read(teamProvider).requireValue.memberIds) {
       await app.read(pokemonProvider(id).future);
     }
     return app.read(teamAnalysisProvider);
@@ -100,6 +100,15 @@ void main() {
 
     expect(state.missingCount, 0);
     expect(state.matchups.every((m) => m.multipliers.isEmpty), isTrue);
+  });
+
+  test('empty slots are ignored, not counted as missing', () async {
+    final app = appWithTeam([null, _pikachu, null, null, _pikachu, null]);
+
+    final state = ready(await settledAnalysis(app));
+
+    expect(state.missingCount, 0);
+    expect(multipliersFor(state, PokemonType.ground), [2, 2]);
   });
 
   test('the same Pokémon twice counts twice but is loaded once', () async {
