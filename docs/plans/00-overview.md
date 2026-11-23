@@ -83,7 +83,7 @@ HttpClient
 
 - **Typed failures**: a sealed `ApiFailure` (offline, timeout, rate-limited with retry time, server error, not found, malformed). The UI never sees raw exceptions.
 - **Defensive parsing**: null sprites, unexpected types and missing stats fall back to sensible defaults and are surfaced where it matters.
-- **Persistence**: `KeyValueStore` interface, implemented with `shared_preferences`, with an in-memory fake for tests. Team, type chart and index are persisted; storage corruption falls back to a clean state.
+- **Persistence**: `KeyValueStore` interface, implemented with `shared_preferences`, with an in-memory fake for tests. The team and the theme choice are persisted (the type chart and index are fetched each visit, D15); storage corruption falls back to a clean state.
 - **State**: Riverpod (`Notifier` / `AsyncNotifier`, no code generation). See the decision log.
 - **Sprites**: loaded from a separate host with placeholder, error and fade-in states.
 
@@ -91,18 +91,18 @@ HttpClient
 
 Material as the structural base (scaffold, text fields, dialogs, navigation), heavily themed. Signature components (type badges, stat bars, team slots, coverage matrix, radar chart) are custom-built from primitives and `CustomPaint`. Responsive from phone to desktop width; accessible contrast and semantics.
 
-## 4. How this meets the brief
+## 4. Quality goals and how each is met
 
-| Requirement | Approach |
+| Goal | Approach |
 |---|---|
 | Creativity & product thinking | Team coverage analysis rather than a list-and-detail Pokédex |
 | Reliability & resilience | Decorator stack, typed failures, stale-while-revalidate, explicit loading / error / empty states everywhere, control panel |
-| Testing | Unit: type-chart maths, parsers, retry/backoff (fake clock), cache, limiter. Widget: state transitions, retry flows, control panel. One end-to-end flow on a fake transport. Opt-in live contract test checks fixtures against the real API. |
+| Testing | Unit: type-chart maths, parsers, retry/backoff (fake clock), cache, limiter. Widget: state transitions, retry flows, control panel. One end-to-end flow on a fake transport. An opt-in live contract test against the real API is planned, not built. |
 | QA & documentation | README with manual test plan (throttling, offline, clear storage, narrow widths, keyboard and screen-reader pass) and known limitations |
 | Code quality & architecture | Strict lints, small files, no logic in widgets, pure domain layer |
 | UX & polish | Themed Material, custom components, responsive, accessible, no jank during request fan-out |
 | Communication | Decision log feeding the README; note on how AI tools were used |
-| Final presentation | The control panel allows live demonstration of every failure mode |
+| Demonstrability | The control panel allows live demonstration of every failure mode |
 
 ## 5. Risks and watch-outs
 
@@ -127,4 +127,4 @@ Material as the structural base (scaffold, text fields, dialogs, navigation), he
 - [x] Search state (index provider, query, ranked results), with the search UI (D23).
 - [ ] UI, in the order set out in [01-ui.md](01-ui.md). Done: theme (light, dark, system), sparse six-slot team (D20), search, team slots with add and remove, wide layout and bottom sheet (D23 to D25). Also done: the coverage matrix (D26), the control panel (D27) the detail dialog with its radar chart (D28) and reordering by dragging or by buttons (D21). To do: the animations, including the flip into the dialog (D22), then compare. The team-level stat breakdown (totals and spread by stat) promised in section 1 is not built yet; keep it, or cut it from section 1.
 - [x] Control panel UI: levers, retry log, clear cache and reload, end drawer (D27).
-- [ ] README: setup, decisions, QA approach, manual test plan, known limitations.
+- [x] README: setup, decisions, QA approach, manual test plan, known limitations. To revisit as the remaining UI steps land.

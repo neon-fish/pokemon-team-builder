@@ -28,13 +28,13 @@ Format: **Decision**, **Options considered**, **Why**, **Trade-offs / revisit if
 ## D3. Camera / image recognition: not doing it
 
 - **Decision:** Out of scope.
-- **Why:** Needs an ML model or a keyed API (conflicts with the keyless rule); flaky on Flutter web; non-deterministic and hard to test meaningfully; does not demonstrate front-end Flutter skill; conflicts with "go deep, not wide".
+- **Why:** Needs an ML model or a keyed API (conflicts with the keyless rule); flaky on Flutter web; non-deterministic and hard to test meaningfully; does not demonstrate front-end Flutter skill; conflicts with keeping the scope tight.
 - **Revisit if:** Never for this project. A silhouette guessing game is the cheap, testable alternative (stretch goal).
 
 ## D4. No client library for the API
 
 - **Decision:** Hand-write the API client over a plain HTTP package.
-- **Why:** Demonstrates proper integration: error mapping, retries, caching, defensive parsing. A wrapper package would hide exactly the parts being assessed.
+- **Why:** Demonstrates proper integration: error mapping, retries, caching, defensive parsing. A wrapper package would hide exactly the parts worth showing.
 - **Trade-offs:** More code to own and test.
 
 ## D5. State management: Riverpod
@@ -313,6 +313,7 @@ Format: **Decision**, **Options considered**, **Why**, **Trade-offs / revisit if
 - **One fixed scale, 0 to 200,** for the chart and the bars, so two Pokémon can be compared by eye. A few stats are higher (Blissey's HP is 255) and are drawn at the edge; the bars give the exact number. A scale fitted to each Pokémon was rejected because it would make every shape look similar.
 - **Screen readers.** The radar chart is a picture of numbers that are also given as text, so it is hidden from them rather than read twice. Each bar row is one sentence ("Attack: 55"), and each weakness is one item ("Rock, 4×"). Which type each multiplier belongs to is therefore still available to a screen reader, unlike the coverage matrix (D26).
 - **Layout.** Chart and bars sit side by side from 480 px of content, one above the other below that. The name sits beside the picture from 420 px, below it narrower: beside the picture and close button it got so little width on a phone with large text that "Charizard" broke mid-word. Found by a test at 320 px wide and double text size. The header does not scroll, so the close button is always in reach.
+- **The stat bars were invisible once, and the first test could not see it.** The fill is a childless `DecoratedBox` inside an `Align`. `Align` loosens the height constraint, and a box with no child shrinks to the smallest size allowed, so the fill was 0 px tall. The test only read the `widthFactor` it had passed in, so it passed. It was found from a screenshot. The fix is `heightFactor: 1`, and a test now measures the rendered size (written to fail first).
 - **Known limitations:**
   - Stats above 200 are drawn at the edge.
   - The sort of ties in the weakness groups is explicit, but the test cannot prove it: a short list happens to stay in order whether or not the tie-break is there.
