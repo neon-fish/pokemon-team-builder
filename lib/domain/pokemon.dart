@@ -1,5 +1,8 @@
 import 'package:pokemon_team_builder/domain/pokemon_type.dart';
 
+/// The six base stats, in the order they are usually shown.
+enum Stat { hp, attack, defense, specialAttack, specialDefense, speed }
+
 /// A Pokémon's six base stats.
 class BaseStats {
   const BaseStats({
@@ -17,6 +20,20 @@ class BaseStats {
   final int specialAttack;
   final int specialDefense;
   final int speed;
+
+  /// The value of one stat, so a screen can go through [Stat.values] instead
+  /// of naming each field.
+  int valueOf(Stat stat) => switch (stat) {
+    Stat.hp => hp,
+    Stat.attack => attack,
+    Stat.defense => defense,
+    Stat.specialAttack => specialAttack,
+    Stat.specialDefense => specialDefense,
+    Stat.speed => speed,
+  };
+
+  /// All six added together: a rough measure of overall strength.
+  int get total => Stat.values.fold(0, (sum, stat) => sum + valueOf(stat));
 }
 
 /// A Pokémon (or one of its alternative forms) as the app uses it.

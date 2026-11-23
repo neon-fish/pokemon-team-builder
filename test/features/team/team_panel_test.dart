@@ -8,6 +8,7 @@ import 'package:pokemon_team_builder/app/theme.dart';
 import 'package:pokemon_team_builder/core/api_failure.dart';
 import 'package:pokemon_team_builder/core/result.dart';
 import 'package:pokemon_team_builder/data/api_client.dart';
+import 'package:pokemon_team_builder/features/detail/pokemon_detail_dialog.dart';
 import 'package:pokemon_team_builder/features/pokemon/type_badge.dart';
 import 'package:pokemon_team_builder/features/team/add_target_notifier.dart';
 import 'package:pokemon_team_builder/features/team/team_notifier.dart';
@@ -183,6 +184,65 @@ void main() {
       expect(savedSlots(tester), [null, 25, null, null, null, null]);
       expect(store.data['team'], '{"ids":[null,25,null,null,null,null]}');
       expect(find.text('Your team (1 of 6)'), findsOneWidget);
+    });
+  });
+
+  group('tapping a Pokémon', () {
+    testWidgets('opens its details', (tester) async {
+      await pumpTeam(tester, saved: '{"ids":[25]}');
+      await tester.pumpAndSettle();
+
+      await tester.tap(
+        find.descendant(of: slot(0), matching: find.byType(Card)),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(PokemonDetailDialog), findsOneWidget);
+      expect(find.text('Base stats'), findsOneWidget);
+    });
+
+    testWidgets('on its name works as well as on the card', (tester) async {
+      await pumpTeam(tester, saved: '{"ids":[25]}');
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Pikachu'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(PokemonDetailDialog), findsOneWidget);
+    });
+
+    testWidgets('on its remove button removes it, and opens nothing', (
+      tester,
+    ) async {
+      await pumpTeam(tester, saved: '{"ids":[25]}');
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byTooltip('Remove Pikachu from the team'));
+      await tester.pumpAndSettle();
+
+      expect(savedSlots(tester), everyElement(isNull));
+      expect(find.byType(PokemonDetailDialog), findsNothing);
+    });
+
+    testWidgets('does nothing while it is still loading', (tester) async {
+      await pumpTeam(tester, saved: '{"ids":[25]}', client: _HeldApiClient());
+      await tester.pump();
+      await tester.pump();
+
+      await tester.tap(find.byType(CircularProgressIndicator));
+      await tester.pump();
+
+      expect(find.byType(PokemonDetailDialog), findsNothing);
+    });
+
+    testWidgets('does nothing if it could not be loaded', (tester) async {
+      await pumpTeam(tester, saved: '{"ids":[7]}');
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Could not load #7'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(PokemonDetailDialog), findsNothing);
     });
   });
 

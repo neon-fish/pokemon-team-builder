@@ -292,3 +292,17 @@ Format: **Decision**, **Options considered**, **Why**, **Trade-offs / revisit if
   - No cache hit or stale-refresh events in the log.
   - The log has no timestamps, only order.
   - A timed-out request carries on in the background (Dart cannot cancel it); only its answer is ignored (D12).
+
+## D28. The detail dialog and the radar chart
+
+- **Opening.** Tapping a Pokémon that has loaded opens a dialog about it. A slot that is loading, or failed, does nothing when tapped (a failed one has its own "Try again"). The remove button sits inside the tappable card and takes its own taps, so removing never opens the dialog. This is the plain dialog; the flip transition (D22) is built later, with the other animations, and replaces only how the dialog appears.
+- **What it holds:** picture, name, number and types; the six base stats as a radar chart and as bars with a total; and what the Pokémon is weak to, resists and is immune to, sorted into those three groups with the multiplier beside each type. The move earlier / later buttons come with reordering (D21).
+- **The type matchups are the team analysis applied to a team of one** (`defencesOf` calls `analyseTeam`), so a dual-typed Pokémon's multipliers combine in exactly one place. It needs the type chart, so the dialog shows a spinner while that loads and, if it fails, says so with a "Try again". The rest of the dialog does not wait for it.
+- **The radar chart is custom-painted.** The geometry (`axisDirection`, `radarPoints`, `statFraction`) is plain functions with their own tests, apart from the drawing. The painter measures its labels first and gives the chart whatever room is left, so larger text shrinks the chart rather than overlapping it. The first axis points straight up and the rest follow clockwise. Colours come from the theme.
+- **One fixed scale, 0 to 200,** for the chart and the bars, so two Pokémon can be compared by eye. A few stats are higher (Blissey's HP is 255) and are drawn at the edge; the bars give the exact number. A scale fitted to each Pokémon was rejected because it would make every shape look similar.
+- **Screen readers.** The radar chart is a picture of numbers that are also given as text, so it is hidden from them rather than read twice. Each bar row is one sentence ("Attack: 55"), and each weakness is one item ("Rock, 4×"). Which type each multiplier belongs to is therefore still available to a screen reader, unlike the coverage matrix (D26).
+- **Layout.** Chart and bars sit side by side from 480 px of content, one above the other below that. The name sits beside the picture from 420 px, below it narrower: beside the picture and close button it got so little width on a phone with large text that "Charizard" broke mid-word. Found by a test at 320 px wide and double text size. The header does not scroll, so the close button is always in reach.
+- **Known limitations:**
+  - Stats above 200 are drawn at the edge.
+  - The sort of ties in the weakness groups is explicit, but the test cannot prove it: a short list happens to stay in order whether or not the tie-break is there.
+  - The radar chart's `shouldRepaint` is not tested directly; the tests check that a new shape reaches the picture.

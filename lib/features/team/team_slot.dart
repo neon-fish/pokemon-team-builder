@@ -4,6 +4,7 @@ import 'package:pokemon_team_builder/app/failure_message.dart';
 import 'package:pokemon_team_builder/core/api_failure.dart';
 import 'package:pokemon_team_builder/core/result.dart';
 import 'package:pokemon_team_builder/domain/pokemon.dart';
+import 'package:pokemon_team_builder/features/detail/pokemon_detail_dialog.dart';
 import 'package:pokemon_team_builder/features/pokemon/display_name.dart';
 import 'package:pokemon_team_builder/features/pokemon/pokemon_provider.dart';
 import 'package:pokemon_team_builder/features/pokemon/pokemon_sprite.dart';
@@ -106,31 +107,47 @@ class _FilledSlot extends ConsumerWidget {
       _ => 'Pokémon #$id',
     };
 
+    // Only a Pokémon that has loaded has details to show.
+    final pokemon = switch (details) {
+      Ok(:final value) => value,
+      _ => null,
+    };
+
     return Card(
       margin: EdgeInsets.zero,
+      clipBehavior: Clip.antiAlias,
       shape: _slotShape(Theme.of(context).colorScheme.outlineVariant),
-      child: Stack(
-        children: [
-          // The content sets the slot's size (so that larger text makes the
-          // slot taller). The top padding keeps it clear of the remove button.
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 32, 12, 12),
-            child: switch (details) {
-              null => const Center(child: CircularProgressIndicator()),
-              Ok(:final value) => _Member(value),
-              Err(:final failure) => _Unavailable(id, failure),
-            },
-          ),
-          Positioned(
-            top: 0,
-            right: 0,
-            child: IconButton(
-              icon: const Icon(Icons.close),
-              tooltip: 'Remove $name from the team',
-              onPressed: () => ref.read(teamProvider.notifier).removeAt(index),
+      child: InkWell(
+        onTap: pokemon == null
+            ? null
+            : () => showPokemonDetail(context, pokemon),
+        child: Stack(
+          children: [
+            // The content sets the slot's size (so that larger text makes the
+            // slot taller). The top padding keeps it clear of the remove
+            // button.
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 32, 12, 12),
+              child: switch (details) {
+                null => const Center(child: CircularProgressIndicator()),
+                Ok(:final value) => _Member(value),
+                Err(:final failure) => _Unavailable(id, failure),
+              },
             ),
-          ),
-        ],
+            // A button inside the tappable card takes its own taps, so
+            // removing never opens the details.
+            Positioned(
+              top: 0,
+              right: 0,
+              child: IconButton(
+                icon: const Icon(Icons.close),
+                tooltip: 'Remove $name from the team',
+                onPressed: () =>
+                    ref.read(teamProvider.notifier).removeAt(index),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

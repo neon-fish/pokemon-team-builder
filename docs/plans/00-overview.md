@@ -125,6 +125,6 @@ Material as the structural base (scaffold, text fields, dialogs, navigation), he
 - [x] Team analysis (domain): `analyseTeam`, `TypeMatchup`, tested against the real type chart (D18).
 - [x] State: `pokemonProvider` (family), `typeChartProvider`, `teamAnalysisProvider` with `Loading` / `Unavailable` / `Ready` states (D19).
 - [x] Search state (index provider, query, ranked results), with the search UI (D23).
-- [ ] UI, in the order set out in [01-ui.md](01-ui.md). Done: theme (light, dark, system), sparse six-slot team (D20), search, team slots with add and remove, wide layout and bottom sheet (D23 to D25). Also done: the coverage matrix (D26) and the control panel (D27). To do: reordering (D21), then animation and the flip detail dialog (D22), then compare.
+- [ ] UI, in the order set out in [01-ui.md](01-ui.md). Done: theme (light, dark, system), sparse six-slot team (D20), search, team slots with add and remove, wide layout and bottom sheet (D23 to D25). Also done: the coverage matrix (D26), the control panel (D27) and the detail dialog with its radar chart (D28). To do: reordering (D21), then the animations, including the flip into the dialog (D22), then compare.
 - [x] Control panel UI: levers, retry log, clear cache and reload, end drawer (D27).
 - [ ] README: setup, decisions, QA approach, manual test plan, known limitations.
