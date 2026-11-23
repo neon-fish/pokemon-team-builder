@@ -70,7 +70,7 @@ void main() {
     return state as TeamAnalysisReady;
   }
 
-  List<double> multipliersFor(TeamAnalysisReady state, PokemonType attacking) {
+  List<double?> multipliersFor(TeamAnalysisReady state, PokemonType attacking) {
     return state.matchups
         .singleWhere((m) => m.attacking == attacking)
         .multipliers;
@@ -88,9 +88,25 @@ void main() {
     final state = ready(await settledAnalysis(app));
 
     expect(state.missingCount, 0);
-    // Pikachu is electric: weak to ground, resists flying.
-    expect(multipliersFor(state, PokemonType.ground), [2]);
-    expect(multipliersFor(state, PokemonType.flying), [0.5]);
+    expect(state.analysedCount, 1);
+    // Pikachu is electric: weak to ground, resists flying. (The other five
+    // slots are empty.)
+    expect(multipliersFor(state, PokemonType.ground), [
+      2,
+      null,
+      null,
+      null,
+      null,
+      null,
+    ]);
+    expect(multipliersFor(state, PokemonType.flying), [
+      0.5,
+      null,
+      null,
+      null,
+      null,
+      null,
+    ]);
   });
 
   test('an empty team is ready, with nobody in it', () async {
@@ -99,16 +115,30 @@ void main() {
     final state = ready(await settledAnalysis(app));
 
     expect(state.missingCount, 0);
-    expect(state.matchups.every((m) => m.multipliers.isEmpty), isTrue);
+    expect(state.analysedCount, 0);
+    // Six slots, none of them analysed.
+    expect(
+      state.matchups.every((m) => m.multipliers.every((x) => x == null)),
+      isTrue,
+    );
+    expect(state.matchups.first.multipliers, hasLength(6));
   });
 
-  test('empty slots are ignored, not counted as missing', () async {
+  test('empty slots keep their place and are not counted as missing', () async {
     final app = appWithTeam([null, _pikachu, null, null, _pikachu, null]);
 
     final state = ready(await settledAnalysis(app));
 
     expect(state.missingCount, 0);
-    expect(multipliersFor(state, PokemonType.ground), [2, 2]);
+    expect(state.analysedCount, 2);
+    expect(multipliersFor(state, PokemonType.ground), [
+      null,
+      2,
+      null,
+      null,
+      2,
+      null,
+    ]);
   });
 
   test('the same Pokémon twice counts twice but is loaded once', () async {
@@ -116,7 +146,7 @@ void main() {
 
     final state = ready(await settledAnalysis(app));
 
-    expect(multipliersFor(state, PokemonType.ground), [2, 2]);
+    expect(multipliersFor(state, PokemonType.ground).take(2), [2, 2]);
     final pikachuRequests = api.calls.where(
       (url) => url.path.endsWith('/pokemon/$_pikachu'),
     );
@@ -132,7 +162,12 @@ void main() {
       final state = ready(await settledAnalysis(app));
 
       expect(state.missingCount, 1);
-      expect(state.matchups.every((m) => m.multipliers.isEmpty), isTrue);
+      expect(state.analysedCount, 0);
+      // The slot is still there, but nothing is known about it.
+      expect(
+        state.matchups.every((m) => m.multipliers.every((x) => x == null)),
+        isTrue,
+      );
     },
   );
 
@@ -147,7 +182,7 @@ void main() {
     final state = ready(app.read(teamAnalysisProvider));
 
     expect(state.missingCount, 0);
-    expect(multipliersFor(state, PokemonType.ground), [2]);
+    expect(multipliersFor(state, PokemonType.ground).first, 2);
   });
 
   test('adding to the team updates the analysis', () async {
@@ -161,7 +196,7 @@ void main() {
     await app.read(pokemonProvider(_pikachu).future);
     final state = ready(app.read(teamAnalysisProvider));
     expect(state.missingCount, 0);
-    expect(multipliersFor(state, PokemonType.ground), [2]);
+    expect(multipliersFor(state, PokemonType.ground).first, 2);
   });
 
   group('when the type chart cannot be loaded', () {

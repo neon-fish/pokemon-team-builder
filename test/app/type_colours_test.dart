@@ -1,18 +1,9 @@
-import 'dart:math';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:pokemon_team_builder/app/type_colours.dart';
 import 'package:pokemon_team_builder/domain/pokemon_type.dart';
 
-/// The WCAG contrast ratio between two colours: 1 (identical) to 21 (black on
-/// white). Written out here, rather than reusing the app's rule, so the test is
-/// an independent check.
-double contrastBetween(Color a, Color b) {
-  final first = a.computeLuminance();
-  final second = b.computeLuminance();
-  return (max(first, second) + 0.05) / (min(first, second) + 0.05);
-}
+import '../support/contrast.dart';
 
 void main() {
   test('every type has its own colour', () {

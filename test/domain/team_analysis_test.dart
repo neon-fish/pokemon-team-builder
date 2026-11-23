@@ -19,7 +19,7 @@ void main() {
       analysis.singleWhere((m) => m.attacking == attacking);
 
   group('one dual-typed Pokémon (Charizard, fire / flying)', () {
-    List<double> multipliersFrom(PokemonType attacking) {
+    List<double?> multipliersFrom(PokemonType attacking) {
       final analysis = analyseTeam([charizard], chart);
       return against(analysis, attacking).multipliers;
     }
@@ -125,5 +125,58 @@ void main() {
     expect(analysis, hasLength(PokemonType.values.length));
     expect(analysis.every((m) => m.multipliers.isEmpty), isTrue);
     expect(analysis.any((m) => m.isExposed), isFalse);
+  });
+
+  group('slots with nothing to analyse', () {
+    // Slot 0 empty, slot 1 Charizard, slot 2 not loaded, slot 3 Blastoise.
+    late List<TypeMatchup> analysis;
+    setUp(() {
+      analysis = analyseTeam([null, charizard, null, blastoise], chart);
+    });
+
+    test('keep their place, as null', () {
+      // Charizard 2x and Blastoise 0.5x against water.
+      expect(against(analysis, PokemonType.water).multipliers, [
+        null,
+        2,
+        null,
+        0.5,
+      ]);
+    });
+
+    test('are left out of every count', () {
+      final water = against(analysis, PokemonType.water);
+
+      expect(water.knownCount, 2);
+      expect(water.weakCount, 1);
+      expect(water.resistantCount, 1);
+      expect(water.immuneCount, 0);
+    });
+
+    test('a team of only nulls is exposed to nothing', () {
+      final nobody = analyseTeam([null, null, null], chart);
+
+      expect(nobody.every((m) => m.knownCount == 0), isTrue);
+      expect(nobody.any((m) => m.isExposed), isFalse);
+    });
+  });
+
+  group('net exposure', () {
+    test('is weak members minus those that resist or ignore the type', () {
+      // Against electric: Charizard weak, Blastoise weak, Venusaur resists.
+      final analysis = analyseTeam([charizard, blastoise, venusaur], chart);
+
+      expect(against(analysis, PokemonType.electric).netExposure, 1);
+      // Against ground: Charizard immune, the others neutral.
+      expect(against(analysis, PokemonType.ground).netExposure, -1);
+    });
+
+    test('is positive exactly when the team is exposed', () {
+      final analysis = analyseTeam([charizard, blastoise, venusaur], chart);
+
+      for (final matchup in analysis) {
+        expect(matchup.netExposure > 0, matchup.isExposed);
+      }
+    });
   });
 }

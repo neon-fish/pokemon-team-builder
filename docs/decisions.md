@@ -261,3 +261,19 @@ Format: **Decision**, **Options considered**, **Why**, **Trade-offs / revisit if
   - **No chosen-slot clearing on wide screens:** once chosen, a slot stays chosen until a pick or another choice. There is no way to un-choose it.
   - **Large text** is handled but only tested at double size, on a phone, in the light and dark themes. Slots are at least 208 px tall and grow with their content.
   - **Picked Pokémon appear without animation** for now (step 7).
+
+## D26. The coverage matrix
+
+- **One row per attacking type, one cell per team slot.** Each cell shows the damage that slot's Pokémon takes (`4×`, `2×`, `½`, `¼`, `0`; normal damage is left blank). Red is a weakness (stronger red for 4×), green resists or ignores it, grey is normal. The multiplier is written in the cell, so colour is never the only signal. A last column counts the weak members.
+- **The analysis keeps slot positions (a change to D18).** `analyseTeam` takes one entry per slot, and a slot with nothing to analyse (empty, still loading, or failed) is `null`, so every result lines up with its column in the team above. Nulls are left out of every count. Before this, empty slots were skipped, which would have shifted the cells left under the wrong Pokémon. `TeamAnalysisReady` also gained `analysedCount`.
+- **Net exposure** is weak members minus members that resist or are immune. `isExposed` is now defined as net exposure above zero (the same rule as before, written differently).
+- **Ordering** (`sortMatchups`, a pure function). "Standard order" is the game's order of the types. "Biggest gaps first" ranks by net exposure, then by number of weak members, then by standard order; the last rule is explicit because `List.sort` is not guaranteed stable. A menu on the "Type" heading chooses between them. The default is biggest gaps first, since it answers the question the app exists for. A known cost: rows move as the team changes. The choice is kept in memory only (not saved).
+- **Plain-language sentences** (`describeExposure`) appear under the types the team is exposed to, and only those: "3 of 6 are weak to Ground and nobody resists it." or "3 of 6 are weak to Fire, but only 1 resists or ignores it." The counts are of the members analysed.
+- **Every state is shown.** Empty team (an invitation to add someone, not 18 blank rows), loading, type chart unavailable (reason and retry), and **incomplete**: when any member is loading or failed, a notice says so, because a team that looks safe may only be missing a member. If nobody could be analysed, the notice shows without the rows.
+- **Screen readers** get one sentence per row ("Ground: 1 weak, 0 resist, 0 immune. 1 of 1 is weak to Ground and nobody resists it.") instead of 108 cells of symbols. The consequence is that which member is weak is not available to a screen reader. Known limitation.
+- **Large text:** cells, the type badge and the "Type" heading scale their text down to fit instead of growing, so rows keep their height. Tested at double size at phone width.
+- **Colours:** red comes from the theme (`error`, `errorContainer`). Material has no "good" colour, so the greens are chosen (pale with dark text in light, the reverse in dark). A test checks every cell, in both themes, reaches the 4.5 contrast ratio.
+- **Known limitations:**
+  - The order choice is not saved.
+  - Rows are not animated when they move.
+  - Offence is not shown (that would need move data; see the overview).

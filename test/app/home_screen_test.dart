@@ -5,6 +5,7 @@ import 'package:pokemon_team_builder/app/app.dart';
 import 'package:pokemon_team_builder/app/providers.dart';
 import 'package:pokemon_team_builder/core/api_failure.dart';
 import 'package:pokemon_team_builder/core/result.dart';
+import 'package:pokemon_team_builder/features/coverage/coverage_matrix.dart';
 import 'package:pokemon_team_builder/features/search/search_panel.dart';
 import 'package:pokemon_team_builder/features/team/team_notifier.dart';
 import 'package:pokemon_team_builder/features/team/team_panel.dart';
@@ -16,6 +17,9 @@ import '../support/in_memory_key_value_store.dart';
 import '../support/screen_size.dart';
 
 void main() {
+  final chartResponses =
+      loadFixture('type_chart_responses.json')! as Map<String, Object?>;
+
   late InMemoryKeyValueStore store;
 
   setUp(() => store = InMemoryKeyValueStore());
@@ -23,6 +27,9 @@ void main() {
   /// Shows the whole app, with a fake API that knows the index and Pikachu.
   Future<void> pumpApp(WidgetTester tester) async {
     final client = FakeApiClient((url) {
+      if (url.path.contains('/type/')) {
+        return Ok(chartResponses[url.pathSegments.last]);
+      }
       if (url.path.endsWith('/pokemon')) {
         return Ok(loadFixture('pokemon_index.json'));
       }
@@ -94,6 +101,28 @@ void main() {
       );
       expect(find.text('Your team (1 of 6)'), findsOneWidget);
       expect(find.byType(SearchPanel), findsOneWidget);
+    });
+
+    testWidgets('the coverage is below the team, and updates as you pick', (
+      tester,
+    ) async {
+      useScreenSize(tester, desktopScreen);
+      await pumpApp(tester);
+      expect(
+        find.text('Add a Pokémon to see where your team is weak.'),
+        findsOneWidget,
+      );
+
+      await tester.tap(pikachuRow());
+      await tester.pumpAndSettle();
+
+      final team = tester.getRect(find.byType(TeamPanel));
+      final coverage = tester.getRect(find.byType(CoverageMatrix));
+      expect(coverage.top, greaterThanOrEqualTo(team.bottom));
+      expect(
+        find.text('1 of 1 is weak to Ground and nobody resists it.'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('an empty slot can be chosen for the next pick', (
@@ -194,6 +223,23 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(teamSlots(tester), [25, null, null, null, null, null]);
+    });
+
+    testWidgets('the coverage is below the team, and updates as you pick', (
+      tester,
+    ) async {
+      useScreenSize(tester, phoneScreen);
+      await pumpApp(tester);
+      await tester.tap(find.text('Add Pokémon'));
+      await tester.pumpAndSettle();
+      await tester.tap(pikachuRow());
+      await tester.pumpAndSettle();
+
+      final team = tester.getRect(find.byType(TeamPanel));
+      final coverage = tester.getRect(find.byType(CoverageMatrix));
+      expect(coverage.top, greaterThanOrEqualTo(team.bottom));
+      expect(find.byType(MatchupRow), findsNWidgets(18));
+      expect(tester.takeException(), isNull);
     });
 
     testWidgets('the button is on screen without scrolling', (tester) async {

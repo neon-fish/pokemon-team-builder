@@ -1,4 +1,5 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:pokemon_team_builder/features/coverage/coverage_matrix.dart';
 import 'package:pokemon_team_builder/features/search/search_panel.dart';
 import 'package:pokemon_team_builder/features/search/search_sheet.dart';
 import 'package:pokemon_team_builder/features/team/team_panel.dart';
@@ -50,7 +51,14 @@ class _WideLayout extends StatelessWidget {
               alignment: Alignment.topCenter,
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: _teamMaxWidth),
-                child: const TeamPanel(),
+                child: const Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    TeamPanel(),
+                    SizedBox(height: 32),
+                    CoverageMatrix(),
+                  ],
+                ),
               ),
             ),
           ),
@@ -84,6 +92,8 @@ class _NarrowLayout extends StatelessWidget {
               // Tapping an empty slot has already chosen it; just show the
               // search.
               TeamPanel(onEmptySlotTapped: () => showSearchSheet(context)),
+              const SizedBox(height: 32),
+              const CoverageMatrix(),
             ],
           ),
         ),

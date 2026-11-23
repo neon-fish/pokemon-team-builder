@@ -33,10 +33,18 @@ final class TeamAnalysisUnavailable extends TeamAnalysisState {
 
 /// The analysis of every team member that has loaded.
 final class TeamAnalysisReady extends TeamAnalysisState {
-  const TeamAnalysisReady(this.matchups, {required this.missingCount});
+  const TeamAnalysisReady(
+    this.matchups, {
+    required this.missingCount,
+    required this.analysedCount,
+  });
 
-  /// One entry per attacking type; see [analyseTeam].
+  /// One entry per attacking type; see [analyseTeam]. Each has one result per
+  /// slot, null for a slot that was not analysed.
   final List<TypeMatchup> matchups;
+
+  /// How many members were analysed.
+  final int analysedCount;
 
   /// Members left out because they are still loading or failed to load. When
   /// this is not zero the analysis is incomplete, and the UI should say so: a
@@ -56,20 +64,23 @@ final teamAnalysisProvider = Provider<TeamAnalysisState>((ref) {
     case Err(:final failure):
       return TeamAnalysisUnavailable(failure);
     case Ok(value: final chart):
-      final memberTypes = <List<PokemonType>>[];
+      // One entry per slot, so each result lines up with its slot.
+      final slotTypes = <List<PokemonType>?>[];
       var missingCount = 0;
-      // Empty slots are not members, so they are not "missing" either.
-      for (final id in team.memberIds) {
-        final pokemon = ref.watch(pokemonProvider(id)).value?.valueOrNull;
-        if (pokemon == null) {
-          missingCount++;
-        } else {
-          memberTypes.add(pokemon.types);
+      for (final id in team.slots) {
+        if (id == null) {
+          // An empty slot is not a member, so it is not "missing" either.
+          slotTypes.add(null);
+          continue;
         }
+        final pokemon = ref.watch(pokemonProvider(id)).value?.valueOrNull;
+        if (pokemon == null) missingCount++;
+        slotTypes.add(pokemon?.types);
       }
       return TeamAnalysisReady(
-        analyseTeam(memberTypes, chart),
+        analyseTeam(slotTypes, chart),
         missingCount: missingCount,
+        analysedCount: slotTypes.nonNulls.length,
       );
   }
 });

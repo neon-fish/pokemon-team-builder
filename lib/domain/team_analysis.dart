@@ -7,41 +7,53 @@ class TypeMatchup {
 
   final PokemonType attacking;
 
-  /// The damage multiplier each member takes from [attacking], in slot order:
-  /// 4, 2, 1, 0.5, 0.25 or 0.
-  final List<double> multipliers;
+  /// The damage multiplier each slot takes from [attacking], in slot order:
+  /// 4, 2, 1, 0.5, 0.25 or 0. A slot with nothing to analyse (empty, or its
+  /// Pokémon has not loaded) is null.
+  final List<double?> multipliers;
+
+  /// How many slots were analysed: those that are not null.
+  int get knownCount => multipliers.nonNulls.length;
 
   /// Members that take more than normal damage.
-  int get weakCount => multipliers.where((m) => m > 1).length;
+  int get weakCount => multipliers.nonNulls.where((m) => m > 1).length;
 
   /// Members that take less than normal damage, but some.
-  int get resistantCount => multipliers.where((m) => m > 0 && m < 1).length;
+  int get resistantCount =>
+      multipliers.nonNulls.where((m) => m > 0 && m < 1).length;
 
   /// Members that take no damage at all.
-  int get immuneCount => multipliers.where((m) => m == 0).length;
+  int get immuneCount => multipliers.nonNulls.where((m) => m == 0).length;
+
+  /// Weak members minus those that resist or ignore the type. Positive means
+  /// the team is more likely to be hurt than helped by this type; the larger,
+  /// the worse.
+  int get netExposure => weakCount - resistantCount - immuneCount;
 
   /// Whether the team is exposed to this type: more members are weak to it than
   /// can resist or ignore it.
   ///
   /// A rule of thumb: it counts members, not how bad each weakness is (a 4x
   /// weakness counts the same as a 2x one), and it looks only at defence.
-  bool get isExposed => weakCount > (resistantCount + immuneCount);
+  bool get isExposed => netExposure > 0;
 }
 
 /// Works out how a team fares against every attacking type.
 ///
-/// [memberTypes] holds the types of each member, in slot order (one or two
-/// each). The result has one [TypeMatchup] per attacking type, in the order of
+/// [slotTypes] has an entry for each slot, in slot order: the types of the
+/// Pokémon there (one or two), or null if there is nothing to analyse. Keeping
+/// the empty and unloaded slots, as nulls, means each result lines up with its
+/// slot. The result has one [TypeMatchup] per attacking type, in the order of
 /// [PokemonType.values].
 List<TypeMatchup> analyseTeam(
-  List<List<PokemonType>> memberTypes,
+  List<List<PokemonType>?> slotTypes,
   TypeChart chart,
 ) {
   return [
     for (final attacking in PokemonType.values)
       TypeMatchup(attacking, [
-        for (final types in memberTypes)
-          _multiplierAgainst(attacking, types, chart),
+        for (final types in slotTypes)
+          types == null ? null : _multiplierAgainst(attacking, types, chart),
       ]),
   ];
 }

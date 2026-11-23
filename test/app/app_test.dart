@@ -70,7 +70,12 @@ void main() {
       find.text('The list of Pokémon could not be loaded.'),
       findsOneWidget,
     );
-    expect(find.text('Try again'), findsOneWidget);
+    // The coverage matrix cannot load its chart either, and says so separately.
+    expect(
+      find.textContaining('The type chart could not be loaded'),
+      findsOneWidget,
+    );
+    expect(find.text('Try again'), findsNWidgets(2));
     // The rest of the app is still there.
     expect(find.byType(SegmentedButton<ThemeMode>), findsOneWidget);
   });
