@@ -55,6 +55,7 @@ void main() {
     WidgetTester tester,
     Pokemon pokemon, {
     Future<Result<TypeChart>> Function()? loadChart,
+    int? slot,
   }) async {
     await tester.pumpWidget(
       ProviderScope(
@@ -69,7 +70,8 @@ void main() {
             builder: (context) => Scaffold(
               body: Center(
                 child: TextButton(
-                  onPressed: () => showPokemonDetail(context, pokemon),
+                  onPressed: () =>
+                      showPokemonDetail(context, pokemon, slot: slot),
                   child: const Text('Open'),
                 ),
               ),
@@ -135,6 +137,43 @@ void main() {
       expect(find.text('Weak to'), findsOneWidget);
       expect(find.text('Immune to'), findsOneWidget);
       expect(find.text('Resists'), findsNothing);
+    });
+  });
+
+  group('moving', () {
+    testWidgets('has no move buttons for a Pokémon that is not on the team', (
+      tester,
+    ) async {
+      await openDialog(tester, charizard);
+
+      expect(find.text('Move earlier'), findsNothing);
+      expect(find.text('Move later'), findsNothing);
+    });
+
+    testWidgets('has move buttons, and the slot, for one that is', (
+      tester,
+    ) async {
+      await openDialog(tester, charizard, slot: 2);
+
+      expect(find.text('Move earlier'), findsOneWidget);
+      expect(find.text('Move later'), findsOneWidget);
+      expect(find.text('Slot 3 of 6'), findsOneWidget);
+    });
+
+    testWidgets('come before the stats, so they are in view on opening', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(400, 500);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await openDialog(tester, charizard, slot: 2);
+
+      final buttonTop = tester.getTopLeft(find.text('Move later')).dy;
+      expect(
+        buttonTop,
+        lessThan(tester.getTopLeft(find.text('Base stats')).dy),
+      );
+      expect(tester.getBottomLeft(find.text('Move later')).dy, lessThan(500));
     });
   });
 
@@ -268,7 +307,7 @@ void main() {
       addTearDown(tester.view.reset);
       tester.platformDispatcher.textScaleFactorTestValue = 2;
       addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
-      await openDialog(tester, charizard);
+      await openDialog(tester, charizard, slot: 2);
 
       expect(tester.takeException(), isNull);
       // Scroll to the end: the last group is reachable.

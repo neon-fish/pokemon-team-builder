@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:pokemon_team_builder/domain/pokemon.dart';
 import 'package:pokemon_team_builder/features/detail/defences_section.dart';
+import 'package:pokemon_team_builder/features/detail/move_controls.dart';
 import 'package:pokemon_team_builder/features/detail/radar_chart.dart';
 import 'package:pokemon_team_builder/features/detail/stat_bars.dart';
 import 'package:pokemon_team_builder/features/pokemon/display_name.dart';
@@ -18,22 +19,36 @@ const _sideBySideFrom = 480.0;
 const _nameBesidePictureFrom = 420.0;
 
 /// Shows everything about one Pokémon in a dialog over the current screen.
-Future<void> showPokemonDetail(BuildContext context, Pokemon pokemon) {
+///
+/// If the Pokémon is on the team, [slot] is the slot it is in (counting from 0),
+/// and the dialog offers to move it.
+Future<void> showPokemonDetail(
+  BuildContext context,
+  Pokemon pokemon, {
+  int? slot,
+}) {
   return showDialog<void>(
     context: context,
-    builder: (context) => PokemonDetailDialog(pokemon),
+    builder: (context) => PokemonDetailDialog(pokemon, slot: slot),
   );
 }
 
 /// A Pokémon's picture, types, base stats (as a radar chart and as bars), and
 /// what it is weak to and resists.
+///
+/// With a [slot], it also has buttons to move the Pokémon earlier or later in
+/// the team. Without one (a Pokémon that is not on the team) it does not.
 class PokemonDetailDialog extends StatelessWidget {
-  const PokemonDetailDialog(this.pokemon, {super.key});
+  const PokemonDetailDialog(this.pokemon, {this.slot, super.key});
 
   final Pokemon pokemon;
+  final int? slot;
 
   @override
   Widget build(BuildContext context) {
+    // Copied to a local variable so that, after the null check, Dart knows it
+    // is not null (it cannot be sure of that for a field).
+    final slot = this.slot;
     return Dialog(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: _dialogMaxWidth),
@@ -46,7 +61,19 @@ class PokemonDetailDialog extends StatelessWidget {
             Flexible(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-                child: _Body(pokemon),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // First, so it is in view when the dialog opens. (Pinned
+                    // below the body instead, it left no room for the body on a
+                    // small screen with large text.)
+                    if (slot != null) ...[
+                      MoveControls(slot),
+                      const Divider(height: 32),
+                    ],
+                    _Body(pokemon),
+                  ],
+                ),
               ),
             ),
           ],

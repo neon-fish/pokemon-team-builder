@@ -39,6 +39,14 @@ class TeamPanel extends ConsumerWidget {
           'Your team ($count of ${Team.slotCount})',
           style: Theme.of(context).textTheme.titleLarge,
         ),
+        // Dragging cannot be seen, so it is said. Always shown, even with
+        // nobody to drag, so that adding the first Pokémon does not move
+        // everything below it.
+        Text(
+          'Hold and drag a Pokémon to move it. Dropping it on another swaps '
+          'the two.',
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
         const SizedBox(height: 12),
         LayoutBuilder(
           builder: (context, constraints) {

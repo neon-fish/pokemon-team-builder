@@ -23,7 +23,7 @@ void main() {
     });
 
     test('the total adds all six', () {
-      expect(stats.total, 320);
+      expect(stats.total, 330);
     });
 
     test('the stats are in the usual order', () {
