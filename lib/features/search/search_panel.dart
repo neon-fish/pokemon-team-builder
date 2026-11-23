@@ -5,10 +5,19 @@ import 'package:pokemon_team_builder/core/api_failure.dart';
 import 'package:pokemon_team_builder/domain/pokemon_summary.dart';
 import 'package:pokemon_team_builder/features/search/search_providers.dart';
 import 'package:pokemon_team_builder/features/search/search_result_tile.dart';
+import 'package:pokemon_team_builder/features/team/team_notifier.dart';
 
 /// The search field and the list of matching Pokémon below it.
+///
+/// Tapping a result adds it to the team. [onPicked] is called afterwards, for
+/// a host (such as a bottom sheet) that wants to close once something is
+/// chosen. With [autofocus] the field is ready for typing as soon as the panel
+/// appears.
 class SearchPanel extends ConsumerStatefulWidget {
-  const SearchPanel({super.key});
+  const SearchPanel({this.autofocus = false, this.onPicked, super.key});
+
+  final bool autofocus;
+  final VoidCallback? onPicked;
 
   @override
   ConsumerState<SearchPanel> createState() => _SearchPanelState();
@@ -23,6 +32,15 @@ class _SearchPanelState extends ConsumerState<SearchPanel> {
     // Start from the current query, so the field and the results agree even if
     // this panel is built again somewhere else later.
     _controller = TextEditingController(text: ref.read(searchQueryProvider));
+    if (widget.autofocus) {
+      // Opened ready for typing: highlight what is there, so typing replaces it
+      // instead of adding to it. Leaving it alone keeps the results, which is
+      // what is wanted when adding the same Pokémon again.
+      _controller.selection = TextSelection(
+        baseOffset: 0,
+        extentOffset: _controller.text.length,
+      );
+    }
   }
 
   @override
@@ -38,8 +56,19 @@ class _SearchPanelState extends ConsumerState<SearchPanel> {
 
   @override
   Widget build(BuildContext context) {
+    // Two search panels can be on screen at once (the sheet, left open while
+    // the window is made wide enough for the permanent one), and they share
+    // one query. When the other one changes it, follow, so this box always
+    // matches the results. Typing here sets the same text, so nothing happens.
+    ref.listen(searchQueryProvider, (previous, next) {
+      if (_controller.text != next) _controller.text = next;
+    });
+
     final search = ref.watch(searchProvider);
     final hasQuery = ref.watch(searchQueryProvider).isNotEmpty;
+    final teamIsFull = ref.watch(
+      teamProvider.select((team) => team.value?.isFull ?? false),
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -48,6 +77,7 @@ class _SearchPanelState extends ConsumerState<SearchPanel> {
           padding: const EdgeInsets.all(16),
           child: TextField(
             controller: _controller,
+            autofocus: widget.autofocus,
             textInputAction: TextInputAction.search,
             onChanged: (text) =>
                 ref.read(searchQueryProvider.notifier).update(text),
@@ -65,12 +95,19 @@ class _SearchPanelState extends ConsumerState<SearchPanel> {
             ),
           ),
         ),
+        if (teamIsFull)
+          const Padding(
+            padding: EdgeInsets.only(left: 16, right: 16, bottom: 8),
+            child: Text('Your team is full. Remove a Pokémon to add another.'),
+          ),
         Expanded(
           child: switch (search) {
             SearchLoading() => const Center(child: CircularProgressIndicator()),
             SearchUnavailable(:final failure) => _Unavailable(failure),
             SearchReady(:final matches, :final query) =>
-              matches.isEmpty ? _NoMatches(query) : _Results(matches),
+              matches.isEmpty
+                  ? _NoMatches(query)
+                  : _Results(matches, onPicked: widget.onPicked),
           },
         ),
       ],
@@ -79,9 +116,10 @@ class _SearchPanelState extends ConsumerState<SearchPanel> {
 }
 
 class _Results extends StatelessWidget {
-  const _Results(this.matches);
+  const _Results(this.matches, {this.onPicked});
 
   final List<PokemonSummary> matches;
+  final VoidCallback? onPicked;
 
   @override
   Widget build(BuildContext context) {
@@ -93,7 +131,11 @@ class _Results extends StatelessWidget {
       itemCount: matches.length,
       itemBuilder: (context, index) {
         final summary = matches[index];
-        return SearchResultTile(summary, key: ValueKey(summary.id));
+        return SearchResultTile(
+          summary,
+          onPicked: onPicked,
+          key: ValueKey(summary.id),
+        );
       },
     );
   }

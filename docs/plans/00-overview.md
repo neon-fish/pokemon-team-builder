@@ -124,7 +124,7 @@ Material as the structural base (scaffold, text fields, dialogs, navigation), he
 - [x] Team: `Team` rules, `KeyValueStore` (`shared_preferences`), `TeamRepository`, `TeamNotifier` (D17).
 - [x] Team analysis (domain): `analyseTeam`, `TypeMatchup`, tested against the real type chart (D18).
 - [x] State: `pokemonProvider` (family), `typeChartProvider`, `teamAnalysisProvider` with `Loading` / `Unavailable` / `Ready` states (D19).
-- [ ] Search state (index provider and query), added with the search UI.
-- [ ] UI, in the order set out in [01-ui.md](01-ui.md): theme (light, dark, system), sparse six-slot team (D20), search and team slots, reordering (D21), coverage matrix, then the control panel, then animation and the flip detail dialog (D22), then compare.
+- [x] Search state (index provider, query, ranked results), with the search UI (D23).
+- [ ] UI, in the order set out in [01-ui.md](01-ui.md). Done: theme (light, dark, system), sparse six-slot team (D20), search, team slots with add and remove, wide layout and bottom sheet (D23 to D25). To do: reordering (D21), coverage matrix, then the control panel, then animation and the flip detail dialog (D22), then compare.
 - [ ] Control panel UI (the levers' state already exists as `faultSettingsProvider`).
 - [ ] README: setup, decisions, QA approach, manual test plan, known limitations.

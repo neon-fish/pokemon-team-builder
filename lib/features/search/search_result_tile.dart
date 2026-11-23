@@ -8,6 +8,7 @@ import 'package:pokemon_team_builder/features/pokemon/display_name.dart';
 import 'package:pokemon_team_builder/features/pokemon/pokemon_provider.dart';
 import 'package:pokemon_team_builder/features/pokemon/pokemon_sprite.dart';
 import 'package:pokemon_team_builder/features/pokemon/type_badge.dart';
+import 'package:pokemon_team_builder/features/team/team_notifier.dart';
 
 /// How long a row must stay on screen before it asks for its details.
 ///
@@ -24,10 +25,15 @@ const _loadDelay = Duration(milliseconds: 150);
 /// itself once it has been on screen for a moment ([_loadDelay]). The list
 /// builds only the rows on screen, so scrolling loads details as they are
 /// needed rather than all at once.
+///
+/// Tapping the row adds the Pokémon to the team, then calls [onPicked] (for a
+/// screen that wants to react, such as closing the search). When the team is
+/// full the row is disabled.
 class SearchResultTile extends ConsumerStatefulWidget {
-  const SearchResultTile(this.summary, {super.key});
+  const SearchResultTile(this.summary, {this.onPicked, super.key});
 
   final PokemonSummary summary;
+  final VoidCallback? onPicked;
 
   @override
   ConsumerState<SearchResultTile> createState() => _SearchResultTileState();
@@ -71,7 +77,16 @@ class _SearchResultTileState extends ConsumerState<SearchResultTile> {
         ? null
         : request.value;
 
+    final teamIsFull = ref.watch(
+      teamProvider.select((team) => team.value?.isFull ?? false),
+    );
+
     return ListTile(
+      enabled: !teamIsFull,
+      onTap: () {
+        ref.read(teamProvider.notifier).addPicked(summary.id);
+        widget.onPicked?.call();
+      },
       leading: PokemonSprite(
         url: switch (details) {
           Ok(:final value) => value.spriteUrl,

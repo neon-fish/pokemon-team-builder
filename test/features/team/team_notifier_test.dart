@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pokemon_team_builder/app/providers.dart';
 import 'package:pokemon_team_builder/data/storage/key_value_store.dart';
+import 'package:pokemon_team_builder/features/team/add_target_notifier.dart';
 import 'package:pokemon_team_builder/features/team/team_notifier.dart';
 
 import '../../support/in_memory_key_value_store.dart';
@@ -139,6 +140,68 @@ void main() {
     await container.read(teamProvider.notifier).add(7);
 
     expect(slotsIn(container), [1, 2, 3, 4, 5, 6]);
+  });
+
+  group('adding a picked Pokémon', () {
+    test('goes to the first empty slot if no slot was chosen', () async {
+      final container = appWith(
+        InMemoryKeyValueStore({'team': '{"ids":[1,null,3]}'}),
+      );
+      await container.read(teamProvider.future);
+
+      await container.read(teamProvider.notifier).addPicked(9);
+
+      expect(slotsIn(container), [1, 9, 3, null, null, null]);
+    });
+
+    test('goes to the slot that was chosen, and uses up the choice', () async {
+      final store = InMemoryKeyValueStore();
+      final container = appWith(store);
+      await container.read(teamProvider.future);
+      container.read(addTargetProvider.notifier).choose(4);
+
+      await container.read(teamProvider.notifier).addPicked(9);
+
+      expect(slotsIn(container), [null, null, null, null, 9, null]);
+      expect(store.data['team'], '{"ids":[null,null,null,null,9,null]}');
+      expect(container.read(addTargetProvider), isNull);
+
+      // The next pick is back to the first empty slot.
+      await container.read(teamProvider.notifier).addPicked(7);
+      expect(slotsIn(container), [7, null, null, null, 9, null]);
+    });
+
+    test(
+      'a chosen slot that has since been filled is not overwritten',
+      () async {
+        final container = appWith(InMemoryKeyValueStore());
+        await container.read(teamProvider.future);
+        final notifier = container.read(teamProvider.notifier);
+        container.read(addTargetProvider.notifier).choose(2);
+
+        // Something else fills slot 2 before the pick lands.
+        await notifier.addAt(2, 5);
+        await notifier.addPicked(9);
+
+        expect(slotsIn(container), [9, null, 5, null, null, null]);
+      },
+    );
+
+    test(
+      'is ignored when the team is full, but still uses up the choice',
+      () async {
+        final container = appWith(
+          InMemoryKeyValueStore({'team': '{"ids":[1,2,3,4,5,6]}'}),
+        );
+        await container.read(teamProvider.future);
+        container.read(addTargetProvider.notifier).choose(0);
+
+        await container.read(teamProvider.notifier).addPicked(9);
+
+        expect(slotsIn(container), [1, 2, 3, 4, 5, 6]);
+        expect(container.read(addTargetProvider), isNull);
+      },
+    );
   });
 
   group('a change that changes nothing is not saved', () {

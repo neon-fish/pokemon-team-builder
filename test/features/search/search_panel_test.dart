@@ -10,9 +10,13 @@ import 'package:pokemon_team_builder/core/result.dart';
 import 'package:pokemon_team_builder/data/api_client.dart';
 import 'package:pokemon_team_builder/features/pokemon/type_badge.dart';
 import 'package:pokemon_team_builder/features/search/search_panel.dart';
+import 'package:pokemon_team_builder/features/search/search_providers.dart';
+import 'package:pokemon_team_builder/features/team/add_target_notifier.dart';
+import 'package:pokemon_team_builder/features/team/team_notifier.dart';
 
 import '../../support/fake_api_client.dart';
 import '../../support/fixtures.dart';
+import '../../support/in_memory_key_value_store.dart';
 
 /// An [ApiClient] that lists one Pokémon (Pikachu) and holds back each request
 /// for its details until the test answers it, so a test can look at the screen
@@ -42,9 +46,11 @@ void main() {
   // What the fake API does, changed by tests to simulate trouble.
   var indexFails = false;
   late FakeApiClient api;
+  late InMemoryKeyValueStore store;
 
   setUp(() {
     indexFails = false;
+    store = InMemoryKeyValueStore();
     api = FakeApiClient((url) {
       if (url.path.endsWith('/pokemon')) {
         return indexFails
@@ -59,17 +65,36 @@ void main() {
     });
   });
 
-  Future<void> pumpPanel(WidgetTester tester, [ApiClient? client]) {
+  /// Shows the search panel. [savedTeam] is team text already in storage.
+  Future<void> pumpPanel(
+    WidgetTester tester, {
+    ApiClient? client,
+    VoidCallback? onPicked,
+    bool autofocus = false,
+    String? savedTeam,
+  }) {
+    if (savedTeam != null) store.data['team'] = savedTeam;
     return tester.pumpWidget(
       ProviderScope(
-        overrides: [apiClientProvider.overrideWithValue(client ?? api)],
+        overrides: [
+          apiClientProvider.overrideWithValue(client ?? api),
+          keyValueStoreProvider.overrideWithValue(store),
+        ],
         child: MaterialApp(
           theme: buildAppTheme(Brightness.light),
-          home: const Scaffold(body: SearchPanel()),
+          home: Scaffold(
+            body: SearchPanel(autofocus: autofocus, onPicked: onPicked),
+          ),
         ),
       ),
     );
   }
+
+  ProviderContainer containerOf(WidgetTester tester) =>
+      ProviderScope.containerOf(tester.element(find.byType(SearchPanel)));
+
+  List<int?> teamSlots(WidgetTester tester) =>
+      containerOf(tester).read(teamProvider).requireValue.slots;
 
   /// Waits out the short pause rows make before asking for their details, then
   /// lets the requests finish.
@@ -220,7 +245,7 @@ void main() {
       tester,
     ) async {
       final held = _HeldApiClient();
-      await pumpPanel(tester, held);
+      await pumpPanel(tester, client: held);
       await settleWithDetails(tester);
       held.pending.single.complete(const Err(NotFoundFailure()));
       await tester.pumpAndSettle();
@@ -263,6 +288,158 @@ void main() {
     });
   });
 
+  group('picking a Pokémon', () {
+    testWidgets('tapping a row adds it to the team', (tester) async {
+      await pumpPanel(tester);
+      await tester.pumpAndSettle();
+
+      await tester.tap(rowFor('Pikachu'));
+      await tester.pumpAndSettle();
+
+      expect(teamSlots(tester), [25, null, null, null, null, null]);
+      expect(store.data['team'], '{"ids":[25,null,null,null,null,null]}');
+    });
+
+    testWidgets('it goes to the slot that was chosen', (tester) async {
+      await pumpPanel(tester);
+      await tester.pumpAndSettle();
+      containerOf(tester).read(addTargetProvider.notifier).choose(4);
+
+      await tester.tap(rowFor('Pikachu'));
+      await tester.pumpAndSettle();
+
+      expect(teamSlots(tester), [null, null, null, null, 25, null]);
+    });
+
+    testWidgets('the screen hears about it', (tester) async {
+      var picked = 0;
+      await pumpPanel(tester, onPicked: () => picked++);
+      await tester.pumpAndSettle();
+
+      await tester.tap(rowFor('Pikachu'));
+
+      expect(picked, 1);
+    });
+
+    testWidgets('the same Pokémon can be picked again', (tester) async {
+      await pumpPanel(tester);
+      await tester.pumpAndSettle();
+
+      await tester.tap(rowFor('Pikachu'));
+      await tester.tap(rowFor('Pikachu'));
+      await tester.pumpAndSettle();
+
+      expect(teamSlots(tester), [25, 25, null, null, null, null]);
+    });
+
+    testWidgets('a full team says so, and rows stop responding', (
+      tester,
+    ) async {
+      var picked = 0;
+      await pumpPanel(
+        tester,
+        savedTeam: '{"ids":[1,2,3,4,5,6]}',
+        onPicked: () => picked++,
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Your team is full. Remove a Pokémon to add another.'),
+        findsOneWidget,
+      );
+      await tester.tap(rowFor('Pikachu'));
+      await tester.pumpAndSettle();
+
+      expect(teamSlots(tester), [1, 2, 3, 4, 5, 6]);
+      expect(picked, 0);
+    });
+
+    testWidgets('there is no full-team message while there is room', (
+      tester,
+    ) async {
+      await pumpPanel(tester, savedTeam: '{"ids":[1,2,3,4,5]}');
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('team is full'), findsNothing);
+    });
+  });
+
+  testWidgets('can start with the search field focused', (tester) async {
+    await pumpPanel(tester, autofocus: true);
+    await tester.pumpAndSettle();
+
+    final field = tester.widget<EditableText>(find.byType(EditableText));
+    expect(field.focusNode.hasFocus, isTrue);
+  });
+
+  group('when opened ready for typing', () {
+    /// A new panel in an app that has already searched for [earlier], as the
+    /// sheet is each time it opens.
+    Future<void> openAfterSearching(WidgetTester tester, String earlier) async {
+      final container = ProviderContainer(
+        overrides: [
+          apiClientProvider.overrideWithValue(api),
+          keyValueStoreProvider.overrideWithValue(store),
+        ],
+      );
+      addTearDown(container.dispose);
+      container.read(searchQueryProvider.notifier).update(earlier);
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(
+            theme: buildAppTheme(Brightness.light),
+            home: const Scaffold(body: SearchPanel(autofocus: true)),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    TextEditingController fieldController(WidgetTester tester) =>
+        tester.widget<TextField>(find.byType(TextField)).controller!;
+
+    testWidgets('the earlier search is highlighted, and still shown', (
+      tester,
+    ) async {
+      await openAfterSearching(tester, 'pika');
+
+      expect(fieldController(tester).text, 'pika');
+      expect(
+        fieldController(tester).selection,
+        const TextSelection(baseOffset: 0, extentOffset: 4),
+      );
+      // The results are those of the earlier search, ready to pick again.
+      expect(find.text('Pikachu'), findsOneWidget);
+      expect(find.text('Bulbasaur'), findsNothing);
+    });
+
+    testWidgets('typing replaces the earlier search', (tester) async {
+      await openAfterSearching(tester, 'pika');
+
+      // What a keystroke does to a selected field: the selection is replaced.
+      final controller = fieldController(tester);
+      controller.value = controller.value.replaced(controller.selection, 'b');
+      await tester.pumpAndSettle();
+
+      expect(controller.text, 'b');
+    });
+
+    testWidgets('an empty field has nothing to highlight', (tester) async {
+      await openAfterSearching(tester, '');
+
+      expect(fieldController(tester).selection.isCollapsed, isTrue);
+    });
+  });
+
+  testWidgets('does not take focus unless asked', (tester) async {
+    await pumpPanel(tester);
+    await tester.pumpAndSettle();
+
+    final field = tester.widget<EditableText>(find.byType(EditableText));
+    expect(field.focusNode.hasFocus, isFalse);
+  });
+
   group('with a long list', () {
     // 1,350 rows, as in the real index. Every Pokémon's details are Pikachu's.
     late FakeApiClient big;
@@ -296,7 +473,7 @@ void main() {
         .position;
 
     testWidgets('only the rows on screen load their details', (tester) async {
-      await pumpPanel(tester, big);
+      await pumpPanel(tester, client: big);
       await settleWithDetails(tester);
 
       final requested = detailRequests(big).length;
@@ -308,7 +485,7 @@ void main() {
     testWidgets('rows only passing through do not load their details', (
       tester,
     ) async {
-      await pumpPanel(tester, big);
+      await pumpPanel(tester, client: big);
       await settleWithDetails(tester);
       final before = detailRequests(big).length;
 
@@ -331,7 +508,7 @@ void main() {
     testWidgets('a row that was loaded shows at once when scrolled back to', (
       tester,
     ) async {
-      await pumpPanel(tester, big);
+      await pumpPanel(tester, client: big);
       await settleWithDetails(tester);
       expect(inRow('Pokemon 1', find.text('Electric')), findsOneWidget);
 

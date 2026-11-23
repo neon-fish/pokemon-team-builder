@@ -11,6 +11,7 @@ import 'package:pokemon_team_builder/features/theme/theme_mode_notifier.dart';
 import '../support/fake_api_client.dart';
 import '../support/fixtures.dart';
 import '../support/in_memory_key_value_store.dart';
+import '../support/screen_size.dart';
 
 void main() {
   /// The pretend outside world: a fake API (answering `null` unless a [client]
@@ -42,6 +43,7 @@ void main() {
   }
 
   testWidgets('starts with the search, ready to use', (tester) async {
+    useScreenSize(tester, desktopScreen);
     final client = FakeApiClient(
       (url) => url.path.endsWith('/pokemon')
           ? Ok(loadFixture('pokemon_index.json'))
@@ -59,6 +61,7 @@ void main() {
   testWidgets('shows a message instead of crashing when nothing loads', (
     tester,
   ) async {
+    useScreenSize(tester, desktopScreen);
     final client = FakeApiClient((_) => const Err(OfflineFailure('no wifi')));
     await pumpAppWith(tester, client: client);
     await tester.pumpAndSettle();

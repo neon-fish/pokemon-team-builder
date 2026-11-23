@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pokemon_team_builder/app/providers.dart';
 import 'package:pokemon_team_builder/domain/team.dart';
+import 'package:pokemon_team_builder/features/team/add_target_notifier.dart';
 
 /// The user's team. Loaded from storage when first read, saved after every
 /// change.
@@ -21,6 +22,27 @@ class TeamNotifier extends AsyncNotifier<Team> {
   /// nothing.
   Future<void> addAt(int index, int id) =>
       _change((team) => team.addAt(index, id));
+
+  /// Adds a Pokémon the user picked from the search, and saves the team.
+  ///
+  /// It goes into the slot the user chose ([addTargetProvider]) if that is
+  /// still empty, otherwise into the first empty slot. The choice is used up
+  /// either way. If the team is full, does nothing.
+  Future<void> addPicked(int id) {
+    final target = ref.read(addTargetProvider);
+    ref.read(addTargetProvider.notifier).choose(null);
+
+    // Deciding inside `_change` looks at the team as it is at that moment, so
+    // a slot filled in the meantime is not overwritten.
+    return _change((team) {
+      if (target != null &&
+          target < Team.slotCount &&
+          team.slots[target] == null) {
+        return team.addAt(target, id);
+      }
+      return team.add(id);
+    });
+  }
 
   /// Empties a slot and saves the team. If there is no such slot, or it is
   /// already empty, does nothing.
