@@ -210,7 +210,7 @@ Format: **Decision**, **Options considered**, **Why**, **Trade-offs / revisit if
 - **Options considered:** insert-and-shift with the other cards animating out of the way (as `ReorderableListView` does).
 - **Why:** Shuffling conflicts with fixed slots (D20) and is hard in a layout that changes between a row, a grid and a stack. Swapping is simple to explain, test and make accessible.
 - **Accessibility:** dragging is not reachable by keyboard or screen reader, so cards expose "move earlier / later" semantics actions and the detail dialog has the same buttons.
-- **Consequence for animation:** the throw plays on add and on loading the saved team, never because a slot became filled, or dragging into an empty slot would throw a ball. The state layer records which slots have just arrived. *This is built with the throw-in animation, not with reordering: there is no caller for it until then.*
+- **Consequence for animation:** the throw plays on add and on loading the saved team, never because a slot became filled, or dragging into an empty slot would throw a ball. The state layer records which slots have just arrived. *This was built with the throw-in animation, not with reordering, because it had no caller until then (D29).*
 - **Known limitation:** no shuffle-along animation.
 - **As built (the drag):**
   - **Press and hold, then drag** (`LongPressDraggable`, 300 ms), not a plain `Draggable`. Checked in the SDK source: a plain drag starts once the pointer has moved past the "hit slop", which is 1 px for a mouse and 18 px for touch. So a slightly shaky click would drag instead of opening the details, and on a touch screen the drag would compete with scrolling the page. The delayed version rejects itself if the pointer moves before the time is up, which leaves the press to the click or the scroll. The default delay is 500 ms; that felt slow with a mouse. This replaces the plan's "starts after a small movement".
@@ -272,7 +272,7 @@ Format: **Decision**, **Options considered**, **Why**, **Trade-offs / revisit if
 - **Known limitations:**
   - **No chosen-slot clearing on wide screens:** once chosen, a slot stays chosen until a pick or another choice. There is no way to un-choose it.
   - **Large text** is handled but only tested at double size, on a phone, in the light and dark themes. Slots are at least 208 px tall and grow with their content.
-  - **Picked Pokémon appear without animation** for now (step 7).
+  - ~~Picked Pokémon appear without animation.~~ Now they are thrown in (D29).
 
 ## D26. The coverage matrix
 
@@ -318,3 +318,20 @@ Format: **Decision**, **Options considered**, **Why**, **Trade-offs / revisit if
   - Stats above 200 are drawn at the edge.
   - The sort of ties in the weakness groups is explicit, but the test cannot prove it: a short list happens to stay in order whether or not the tie-break is there.
   - The radar chart's `shouldRepaint` is not tested directly; the tests check that a new shape reaches the picture.
+
+## D29. The throw-in animation
+
+- **Decision:** When a Pokémon arrives in a slot, a ball is thrown over the slot's content, lands, and a flash reveals the content. It is built (step 7a); the flip into the dialog (D22) is a separate step (7b).
+- **Which slots throw** is state, not something the widgets work out. `arrivalsProvider` holds a map from slot number to how long that slot waits before throwing. `TeamNotifier` marks the slots an add fills (found by comparing the team before and after, only for `add`, `addAt` and `addPicked`) and, when the saved team loads, every filled slot, 150 ms apart in slot order (`startupThrowStagger`). `move` and `removeAt` never mark anything, so dragging a Pokémon into an empty slot does not throw a ball (D21); tests check this at both levels. It is not part of `Team`, which is saved data.
+- **A slot uses its arrival up** when it first appears, after that frame (providers cannot change while widgets build). So a rebuild, or a change of layout that builds the slots again, never replays it.
+- **One controller, three phases:** the flight (700 ms), the ball resting where it landed, and the reveal (350 ms). The reveal starts when the ball has landed **and** the Pokémon has settled (loaded, or failed). A slow load keeps the ball waiting; a failed one reveals the error card with its "Try again", never an endless ball. The rule is two booleans in one method, so it has no separate function; it is tested through the widget.
+- **What is covered, and what is drawn on.** The cover hides only the slot's content area. The card's border and the remove button stay as they are, so a slot whose ball is still waiting can still be removed (a test holds a load open and removes it). The cover has to be exactly the card's colour to be invisible, so the card's colour is set explicitly and passed to the cover, with a test that they match. The ball and the flash, though, are drawn on the whole card: `ThrowIn` is given a `bleed`, how far the card reaches beyond the content (the slot's own padding, one shared constant), and its picture extends by that much. The card cuts the ball off at its rounded edge, so it seems to arrive from beyond the corner. The first version drew everything inside the content area, which cut the ball off along an invisible line inside the card and sliced the top off its arc. That was noticed by looking at it, and tests now pin both the picture's size and that the cover is only over the content.
+- **Drawing.** The path is a curve pulled up and to the left, so the ball rises and comes down in an arc, starting large and outside the bottom-left corner. The geometry is plain functions with their own tests. The ball is drawn in code, the same design as the app icon, so it looks the same in light and dark. Frames were rendered in both themes to look at: the first version of the flash grew until the edge of the content area cut it off, which showed as a grey rectangle in dark mode, so it is now limited to fade out before it reaches an edge.
+- **Reduced motion:** with the system setting on, nothing is drawn and the content simply shows. The arrival is still used up.
+- **No timers left behind:** a slot that waits its turn uses a `Timer`, cancelled when the widget goes away (a test removes a waiting slot).
+- **Found by mutation checks:** the first reveal-rule tests passed even with the rule removed. One large `pump` delivers a single frame, and an animation's first frame has no time elapsed, so the reveal never ran and the test never noticed. They now use `pumpAndSettle`, and there is a test where the Pokémon loads mid-flight. Each of the rules (readiness, landing, using up, reduced motion, the timer, stagger, no throw on a move) was checked to make a test fail when removed.
+- **Known limitations:**
+  - With every request failing, a slot shows the resting ball until the retries give up, about 16 seconds (D27), then the error card. The remove button works meanwhile.
+  - The ball does not wobble while waiting: a repeating animation would keep widget tests from settling and keep redrawing for nothing.
+  - The animation is checked in widget tests and rendered frames. Reduced motion has also been checked by hand in Chrome: with `prefers-reduced-motion` emulated, no ball is thrown and the slots show their usual loading spinner. So Flutter on the web does turn the browser setting into `disableAnimations`.
+  - The loading spinner is itself a looping animation, and it was still shown with reduced motion on. It is kept because it is functional (it says "loading"), not decoration. Whether it should be swapped for a still indicator under reduced motion has not been decided.

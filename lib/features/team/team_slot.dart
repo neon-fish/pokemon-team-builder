@@ -13,6 +13,7 @@ import 'package:pokemon_team_builder/features/pokemon/pokemon_sprite.dart';
 import 'package:pokemon_team_builder/features/pokemon/type_badge.dart';
 import 'package:pokemon_team_builder/features/team/add_target_notifier.dart';
 import 'package:pokemon_team_builder/features/team/team_notifier.dart';
+import 'package:pokemon_team_builder/features/team/throw_in.dart';
 
 /// How long a Pokémon has to be held before it can be dragged.
 ///
@@ -26,6 +27,11 @@ const dragHoldDelay = Duration(milliseconds: 300);
 
 /// How faded the Pokémon's own slot looks while it is being dragged away.
 const _draggedSlotOpacity = 0.35;
+
+/// The space round a filled slot's content. The top is deeper, to keep the
+/// content clear of the remove button. The throw-in uses the same value to know
+/// how far the card reaches beyond the content.
+const _filledSlotPadding = EdgeInsets.fromLTRB(12, 32, 12, 12);
 
 /// How wide the picture that follows the pointer is.
 const _dragPreviewWidth = 140.0;
@@ -158,7 +164,12 @@ class _FilledSlot extends ConsumerWidget {
     final colours = Theme.of(context).colorScheme;
     final team = ref.read(teamProvider.notifier);
 
+    // Set here, rather than left to the theme's default, because the throw-in
+    // has to cover the content with exactly this colour.
+    final cardColour = colours.surfaceContainerLow;
+
     final card = Card(
+      color: cardColour,
       margin: EdgeInsets.zero,
       clipBehavior: Clip.antiAlias,
       shape: isDropTarget
@@ -196,12 +207,22 @@ class _FilledSlot extends ConsumerWidget {
               // the slot taller). The top padding keeps it clear of the remove
               // button.
               Padding(
-                padding: const EdgeInsets.fromLTRB(12, 32, 12, 12),
-                child: switch (details) {
-                  null => const Center(child: CircularProgressIndicator()),
-                  Ok(:final value) => _Member(value),
-                  Err(:final failure) => _Unavailable(id, failure),
-                },
+                padding: _filledSlotPadding,
+                // When a Pokémon has just been added, a ball is thrown over
+                // this area and the content is revealed once it has loaded or
+                // failed. The remove button is outside it, so it is always
+                // there, even while the ball waits.
+                child: ThrowIn(
+                  slot: index,
+                  settled: details != null,
+                  coverColour: cardColour,
+                  bleed: _filledSlotPadding,
+                  child: switch (details) {
+                    null => const Center(child: CircularProgressIndicator()),
+                    Ok(:final value) => _Member(value),
+                    Err(:final failure) => _Unavailable(id, failure),
+                  },
+                ),
               ),
               // A button inside the tappable card takes its own taps, so
               // removing never opens the details.

@@ -128,6 +128,30 @@ void main() {
       expect(store.data['team'], before);
     });
 
+    testWidgets('does not throw a ball, though the slot becomes filled', (
+      tester,
+    ) async {
+      await pumpTeam(tester, '{"ids":[25,10264]}');
+
+      // Onto an empty slot, then onto a full one.
+      for (final target in [4, 1]) {
+        final gesture = await pickUp(tester, slot(target == 4 ? 0 : 4));
+        await gesture.moveTo(tester.getCenter(slot(target)));
+        await tester.pump();
+        await gesture.up();
+        // Just after the drop: a throw would be under way by now.
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        for (final picture in tester.renderObjectList(
+          find.byKey(const Key('throw-in-picture')),
+        )) {
+          expect(picture, paintsNothing, reason: 'after dropping on $target');
+        }
+        await tester.pumpAndSettle();
+      }
+    });
+
     testWidgets('and dropping it outside the slots changes nothing', (
       tester,
     ) async {

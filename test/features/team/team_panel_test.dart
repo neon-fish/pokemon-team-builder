@@ -11,9 +11,11 @@ import 'package:pokemon_team_builder/data/api_client.dart';
 import 'package:pokemon_team_builder/features/detail/pokemon_detail_dialog.dart';
 import 'package:pokemon_team_builder/features/pokemon/type_badge.dart';
 import 'package:pokemon_team_builder/features/team/add_target_notifier.dart';
+import 'package:pokemon_team_builder/features/team/arrivals_notifier.dart';
 import 'package:pokemon_team_builder/features/team/team_notifier.dart';
 import 'package:pokemon_team_builder/features/team/team_panel.dart';
 import 'package:pokemon_team_builder/features/team/team_slot.dart';
+import 'package:pokemon_team_builder/features/team/throw_in.dart';
 
 import '../../support/fake_api_client.dart';
 import '../../support/fixtures.dart';
@@ -289,6 +291,119 @@ void main() {
 
       expect(containerOf(tester).read(addTargetProvider), isNull);
       expect(emptyTaps, 0);
+    });
+  });
+
+  group('arriving', () {
+    const frame = Duration(milliseconds: 16);
+
+    RenderObject picture(WidgetTester tester, int index) => tester.renderObject(
+      find.descendant(
+        of: slot(index),
+        matching: find.byKey(const Key('throw-in-picture')),
+      ),
+    );
+
+    void expectBall(WidgetTester tester, int index, {required bool shown}) {
+      final matcher = paints..circle();
+      expect(
+        picture(tester, index),
+        shown ? matcher : isNot(matcher),
+        reason: 'ball in slot $index',
+      );
+    }
+
+    testWidgets('a saved team is thrown in one after another', (tester) async {
+      await pumpTeam(tester, saved: '{"ids":[25,25,25]}');
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(frame);
+
+      // Slot 0 is under way. Slot 1 waits one stagger, and slot 2 two. (After
+      // a slot's wait is up, its ball shows from the frame after, hence the
+      // small extra pumps.)
+      const settle = Duration(milliseconds: 30);
+      await tester.pump(startupThrowStagger ~/ 2);
+      expectBall(tester, 0, shown: true);
+      expectBall(tester, 1, shown: false);
+      expectBall(tester, 2, shown: false);
+
+      await tester.pump(startupThrowStagger);
+      await tester.pump(settle);
+      expectBall(tester, 1, shown: true);
+      expectBall(tester, 2, shown: false);
+
+      await tester.pump(startupThrowStagger);
+      await tester.pump(settle);
+      expectBall(tester, 2, shown: true);
+
+      // And all of them end up showing their Pokémon, with nothing over it.
+      await tester.pumpAndSettle();
+      expect(find.text('Pikachu'), findsNWidgets(3));
+      for (var i = 0; i < 3; i++) {
+        expect(picture(tester, i), paintsNothing, reason: 'slot $i');
+      }
+    });
+
+    testWidgets('a Pokémon added to the team is thrown in', (tester) async {
+      await pumpTeam(tester);
+      await tester.pumpAndSettle();
+
+      await containerOf(tester).read(teamProvider.notifier).add(25);
+      await tester.pump();
+      await tester.pump(frame);
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expectBall(tester, 0, shown: true);
+
+      await tester.pumpAndSettle();
+      expect(find.text('Pikachu'), findsOneWidget);
+      expect(picture(tester, 0), paintsNothing);
+    });
+
+    testWidgets('the cover is the colour of the card, so it is not seen', (
+      tester,
+    ) async {
+      await pumpTeam(tester, saved: '{"ids":[25]}');
+      await tester.pumpAndSettle();
+
+      final cover = tester.widget<ThrowIn>(find.byType(ThrowIn)).coverColour;
+      final card = tester.widget<Card>(
+        find.descendant(of: slot(0), matching: find.byType(Card)),
+      );
+
+      expect(card.color, cover);
+    });
+
+    testWidgets('one that cannot be loaded ends with the error, not a ball', (
+      tester,
+    ) async {
+      await pumpTeam(tester);
+      await tester.pumpAndSettle();
+
+      await containerOf(tester).read(teamProvider.notifier).add(7);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Could not load #7'), findsOneWidget);
+      expect(picture(tester, 0), paintsNothing);
+    });
+
+    testWidgets('a slow one keeps the ball waiting, and can still be removed', (
+      tester,
+    ) async {
+      await pumpTeam(tester, saved: '{"ids":[25]}', client: _HeldApiClient());
+      await tester.pump();
+      await tester.pump(frame);
+      // Far longer than the flight. The Pokémon has still not loaded.
+      await tester.pump(const Duration(seconds: 5));
+      await tester.pump(const Duration(seconds: 5));
+
+      expectBall(tester, 0, shown: true);
+
+      await tester.tap(find.byTooltip('Remove Pokémon #25 from the team'));
+      await tester.pump();
+
+      expect(savedSlots(tester), everyElement(isNull));
     });
   });
 
