@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:pokemon_team_builder/app/scratch_home.dart';
+import 'package:pokemon_team_builder/app/home_screen.dart';
 import 'package:pokemon_team_builder/app/theme.dart';
 import 'package:pokemon_team_builder/features/theme/theme_mode_notifier.dart';
 
@@ -21,7 +21,7 @@ class PokemonTeamBuilderApp extends ConsumerWidget {
       darkTheme: buildAppTheme(Brightness.dark),
       // `ThemeMode.system` follows the browser's light/dark preference.
       themeMode: themeMode,
-      home: const ScratchHome(),
+      home: const HomeScreen(),
     );
   }
 }

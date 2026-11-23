@@ -9,6 +9,7 @@ import 'package:pokemon_team_builder/core/result.dart';
 import 'package:pokemon_team_builder/features/theme/theme_mode_notifier.dart';
 
 import '../support/fake_api_client.dart';
+import '../support/fixtures.dart';
 import '../support/in_memory_key_value_store.dart';
 
 void main() {
@@ -40,59 +41,35 @@ void main() {
     );
   }
 
-  testWidgets('shows a prompt before anything is fetched', (tester) async {
-    final client = FakeApiClient((_) => const Ok(null));
-    await pumpAppWith(tester, client: client);
-
-    expect(find.text('Press the button to call PokeAPI.'), findsOneWidget);
-    expect(client.calls, isEmpty);
-  });
-
-  testWidgets('the button fetches a Pokémon and shows a summary', (
-    tester,
-  ) async {
+  testWidgets('starts with the search, ready to use', (tester) async {
     final client = FakeApiClient(
-      (_) => const Ok({
-        'id': 25,
-        'name': 'pikachu',
-        'height': 4,
-        'weight': 60,
-        'base_experience': 112,
-        'sprites': {'ignored': true},
-      }),
+      (url) => url.path.endsWith('/pokemon')
+          ? Ok(loadFixture('pokemon_index.json'))
+          : const Err(NotFoundFailure()),
     );
     await pumpAppWith(tester, client: client);
-
-    await tester.tap(find.byType(FloatingActionButton));
     await tester.pumpAndSettle();
 
-    expect(client.calls.single.host, 'pokeapi.co');
-    expect(client.calls.single.path, startsWith('/api/v2/pokemon/'));
-    expect(find.textContaining('"name": "pikachu"'), findsOneWidget);
-    expect(find.textContaining('ignored'), findsNothing);
+    expect(find.text('Pokémon Team Builder'), findsOneWidget);
+    expect(find.text('Search by name or number'), findsOneWidget);
+    expect(find.text('Bulbasaur'), findsOneWidget);
+    expect(find.byType(SegmentedButton<ThemeMode>), findsOneWidget);
   });
 
-  testWidgets('a failure is shown instead of crashing', (tester) async {
-    final client = FakeApiClient((_) => const Err(OfflineFailure('no wifi')));
-    await pumpAppWith(tester, client: client);
-
-    await tester.tap(find.byType(FloatingActionButton));
-    await tester.pumpAndSettle();
-
-    expect(find.textContaining('Request failed'), findsOneWidget);
-    expect(find.textContaining('no wifi'), findsOneWidget);
-  });
-
-  testWidgets('an unexpected response shape is reported, not parsed', (
+  testWidgets('shows a message instead of crashing when nothing loads', (
     tester,
   ) async {
-    final client = FakeApiClient((_) => const Ok(<Object?>[1, 2]));
+    final client = FakeApiClient((_) => const Err(OfflineFailure('no wifi')));
     await pumpAppWith(tester, client: client);
-
-    await tester.tap(find.byType(FloatingActionButton));
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('Unexpected response'), findsOneWidget);
+    expect(
+      find.text('The list of Pokémon could not be loaded.'),
+      findsOneWidget,
+    );
+    expect(find.text('Try again'), findsOneWidget);
+    // The rest of the app is still there.
+    expect(find.byType(SegmentedButton<ThemeMode>), findsOneWidget);
   });
 
   group('theme', () {

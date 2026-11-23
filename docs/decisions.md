@@ -220,3 +220,29 @@ Format: **Decision**, **Options considered**, **Why**, **Trade-offs / revisit if
 - **Failure during a throw:** a failed load opens to an error card with a retry, never a stuck ball.
 - **Fallback:** if the flip proves unreliable, the detail becomes a grow-and-fade dialog.
 - See [plans/01-ui.md](plans/01-ui.md) for layout, build order and testing.
+
+## D23. Search: filtered on the client, ranked, with rows that load their own details
+
+- **Decision:** The whole index (D16) is held in memory and searched on every keystroke by a pure function, `searchPokemon`. The text is trimmed, lower-cased, and spaces become hyphens (so `Mr Mime` finds `mr-mime`). Best matches come first: names that *start with* the text, or a Pokémon whose number is exactly the text. Names that merely *contain* it follow. Within each group the order of the list is kept. Empty text gives everyone.
+- **Why no debounce and no server search:** about 1,350 short strings is far too little work to wait for the user to stop typing, and PokeAPI has no search endpoint anyway.
+- **Why partial numbers do not match:** typing `2` would otherwise match 2, 20 to 29, 200 to 299 and the 10000s, which is noise. Only an exact number matches.
+- **State:** `pokemonIndexProvider` (failure is a value, as in D19), `searchQueryProvider` (the text), and `searchProvider`, a sealed `SearchState`: `Loading`, `Unavailable(failure)` or `Ready(matches, query)`.
+- **Rows load their own details.** The index has only names and ids, so the picture and types need `pokemonProvider(id)`. Each row watches its own, and a scrolling list builds a row only when it comes into view, so only the visible rows (about a dozen) are requested, not 1,350. A test builds a 1,350-entry list and checks fewer than 30 detail requests are made; I confirmed it fails if the list is swapped for one that builds every row.
+- **A row waits 150 ms before asking** (found by use, then measured). Building rows lazily was not enough: dragging the scroll bar sweeps the whole list past in a second, and a test that simulates that made 1,339 detail requests, each a response of about 350 KB of JSON (9 KB compressed) to decode, with no way to cancel them. The page stuttered, and the rows finally left on screen queued behind a thousand stale requests. Now a row starts a timer when it is built and cancels it if it leaves first, so rows only passing through ask for nothing (0 requests in the same test). A row whose provider already exists (scrolled away and back) shows at once. Both behaviours have tests, and each was checked to fail with the feature removed.
+- **The loading placeholder is built from the badge itself** (`TypeBadgePlaceholder`: same shape, invisible text). `ListTile` positions its title and subtitle using the subtitle's text baseline, and a plain grey box has none, so the old placeholder made the title and subtitle jump about 2 to 4 px when the real badges arrived, although the row height stayed at 72. A test compares the row's positions before and after, and fails with the old placeholder.
+- **A retry shows as loading.** After `ref.invalidate`, Riverpod keeps the previous result in `.value` while the new request runs, so a failed row would have kept saying "Details unavailable" with no sign of life. The row checks `isLoading` first. A test holds the second request open and looks at the screen meanwhile; it failed before the fix. The subtitle is a single `Wrap` in every state, which keeps the three states laid out the same way.
+- **A row whose details fail** still shows its name and number, says "Details unavailable" and has its own retry button. One bad Pokémon does not spoil the list.
+- **Known limitations:**
+  - A request that has been made for a row that then scrolls out of view is not cancelled; it finishes and is cached (D15).
+  - The pictures are the official artwork, which is much larger than a thumbnail. Decoding is scaled down to the size shown, but the download is not. If this proves slow on a real connection, the small sprite is the alternative for list rows.
+  - Matches are not highlighted in the names.
+
+## D24. Presentation conventions: colours, names and messages
+
+- **Type colours** live in `lib/app/type_colours.dart`, not the domain (which has no colours). One `switch` with no default, so a new type cannot compile without a colour. They are the same in light and dark themes.
+- **Text on a coloured badge** is black or white, whichever contrasts more, chosen by the colour's luminance (the switch-over point, 0.179, is where both give a ratio of about 4.58). A test checks all 18 types reach the 4.5 ratio of WCAG AA, using its own contrast formula rather than the app's rule.
+- **Display names** (`mr-mime` becomes `Mr Mime`) are made by a small function in the UI layer. It is deliberately simple: names with a real hyphen come out as two words (`ho-oh` gives `Ho Oh`). The domain keeps the API's names, and search matches against those.
+- **Failure messages** are one exhaustive `switch` over `ApiFailure` in `lib/app/failure_message.dart`. They say what happened in plain words and never show status codes or class names. Tests check each failure has its own, non-empty message.
+- **Sprites** (`PokemonSprite`) always draw a faint placeholder icon underneath. The picture fades in over it; a missing or failed picture leaves the placeholder, never a broken-image box. The fade is skipped when the system asks for reduced motion.
+- **UI text is inline English.** Translating it would mean Flutter's localisation system, which is out of scope. Known limitation.
+- **The scratch screen is gone.** It existed to exercise the API stack by hand. The search list now does that for real (index, details, cache, retries), and the control panel will make the failures visible, so keeping it had no purpose.

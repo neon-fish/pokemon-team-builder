@@ -7,6 +7,7 @@ import 'package:pokemon_team_builder/data/http/fault_settings.dart';
 import 'package:pokemon_team_builder/data/http/http_transport.dart';
 import 'package:pokemon_team_builder/data/http/package_http_transport.dart';
 import 'package:pokemon_team_builder/data/http_api_client.dart';
+import 'package:pokemon_team_builder/data/pokemon_index_repository.dart';
 import 'package:pokemon_team_builder/data/pokemon_repository.dart';
 import 'package:pokemon_team_builder/data/retrying_api_client.dart';
 import 'package:pokemon_team_builder/data/storage/key_value_store.dart';
@@ -70,6 +71,10 @@ final apiClientProvider = Provider<ApiClient>((ref) {
     ConcurrencyLimitedApiClient(RetryingApiClient(HttpApiClient(transport))),
   );
 });
+
+final pokemonIndexRepositoryProvider = Provider<PokemonIndexRepository>(
+  (ref) => PokemonIndexRepository(ref.watch(apiClientProvider)),
+);
 
 final pokemonRepositoryProvider = Provider<PokemonRepository>(
   (ref) => PokemonRepository(ref.watch(apiClientProvider)),

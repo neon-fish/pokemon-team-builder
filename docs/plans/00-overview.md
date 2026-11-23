@@ -115,7 +115,7 @@ Material as the structural base (scaffold, text fields, dialogs, navigation), he
 
 - [x] Project setup: dependencies, strict lints, folder skeleton, `AGENTS.md`, decision log.
 - [x] API stack, minus the cache: typed failures and `Result`, transport, fault injector, status/JSON handling, retry with backoff, concurrency limiter. Unit tested with a fake clock.
-- [x] Composition root (`lib/app/providers.dart`) and a **temporary** scratch screen (`lib/app/scratch_home.dart`) with a button that calls the real API through the full stack. To be deleted once the real UI exists.
+- [x] Composition root (`lib/app/providers.dart`). (A temporary scratch screen that called the real API through the full stack was used until the real search list replaced it.)
 - [x] Caching layer: in-memory, TTL, in-flight de-duplication, stale-while-revalidate, size cap (D15). The `KeyValueStore` arrives with the first thing that must persist (the team).
 - [ ] Cache "clear" lever for the control panel: add when the panel needs it.
 - [x] Type chart: `PokemonType`, `TypeChart`, `TypeChartRepository`, JSON reading helpers, fixture (D16).
