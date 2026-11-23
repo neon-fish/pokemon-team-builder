@@ -46,6 +46,62 @@ void main() {
     build();
   });
 
+  group('forgetting one answer', () {
+    test('makes the next request for it go to the network again', () async {
+      await cache.getJson(url);
+
+      cache.forget(url);
+      final again = await cache.getJson(url);
+
+      expect(again.valueOrNull, 'v2');
+      expect(inner.calls, [url, url]);
+    });
+
+    test('leaves the other answers alone', () async {
+      await cache.getJson(url);
+      await cache.getJson(other);
+
+      cache.forget(url);
+      await cache.getJson(other);
+
+      // `other` was not asked for again.
+      expect(inner.calls, [url, other]);
+    });
+
+    test('is fine for an address that was never stored', () {
+      expect(() => cache.forget(url), returnsNormally);
+    });
+  });
+
+  group('clearing', () {
+    test('makes the next request go to the network again', () async {
+      await cache.getJson(url);
+      await cache.getJson(other);
+
+      cache.clear();
+      final again = await cache.getJson(url);
+
+      // The inner client answers 'v2' the second time it is asked.
+      expect(again.valueOrNull, 'v2');
+      expect(inner.calls, [url, other, url]);
+    });
+
+    test('forgets every entry, not just one', () async {
+      await cache.getJson(url);
+      await cache.getJson(other);
+
+      cache.clear();
+      await cache.getJson(url);
+      await cache.getJson(other);
+
+      expect(inner.calls, hasLength(4));
+    });
+
+    test('an empty cache can be cleared', () {
+      expect(cache.clear, returnsNormally);
+    });
+  });
+
   group('fresh entries', () {
     test('the second request is served without calling the network', () async {
       await cache.getJson(url);

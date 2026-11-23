@@ -39,10 +39,9 @@ class TypeChartRepository {
   Future<Result<Map<PokemonType, double>>> _loadAttacks(
     PokemonType type,
   ) async {
-    final result = await _client.getJson(
-      Uri.parse('$pokeApiBaseUrl/type/${type.name}'),
-    );
-    return parseResult(result, parseAttackMultipliers);
+    final url = Uri.parse('$pokeApiBaseUrl/type/${type.name}');
+    final result = await _client.getJson(url);
+    return parseResponse(_client, url, result, parseAttackMultipliers);
   }
 }
 

@@ -1,4 +1,5 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:pokemon_team_builder/features/control_panel/control_panel.dart';
 import 'package:pokemon_team_builder/features/coverage/coverage_matrix.dart';
 import 'package:pokemon_team_builder/features/search/search_panel.dart';
 import 'package:pokemon_team_builder/features/search/search_sheet.dart';
@@ -22,8 +23,21 @@ class HomeScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Pokémon Team Builder'),
-        actions: const [ThemeModePicker(), SizedBox(width: 16)],
+        actions: [
+          // A `Builder` gives the button a `context` that is inside the
+          // `Scaffold`, which is what finds the drawer to open.
+          Builder(
+            builder: (context) => IconButton(
+              icon: const Icon(Icons.tune),
+              tooltip: 'Simulate problems',
+              onPressed: Scaffold.of(context).openEndDrawer,
+            ),
+          ),
+          const ThemeModePicker(),
+          const SizedBox(width: 16),
+        ],
       ),
+      endDrawer: const ControlPanelDrawer(),
       body: LayoutBuilder(
         builder: (context, constraints) => constraints.maxWidth >= _wideFrom
             ? const _WideLayout()

@@ -117,7 +117,7 @@ Material as the structural base (scaffold, text fields, dialogs, navigation), he
 - [x] API stack, minus the cache: typed failures and `Result`, transport, fault injector, status/JSON handling, retry with backoff, concurrency limiter. Unit tested with a fake clock.
 - [x] Composition root (`lib/app/providers.dart`). (A temporary scratch screen that called the real API through the full stack was used until the real search list replaced it.)
 - [x] Caching layer: in-memory, TTL, in-flight de-duplication, stale-while-revalidate, size cap (D15). The `KeyValueStore` arrives with the first thing that must persist (the team).
-- [ ] Cache "clear" lever for the control panel: add when the panel needs it.
+- [x] Cache "clear" lever for the control panel (D27).
 - [x] Type chart: `PokemonType`, `TypeChart`, `TypeChartRepository`, JSON reading helpers, fixture (D16).
 - [x] Pokémon detail: `Pokemon`, `BaseStats`, `PokemonRepository`, `parseResult`, real-response fixtures.
 - [x] Search index: `PokemonSummary`, `PokemonIndexRepository` (one request, ids parsed from URLs).
@@ -125,6 +125,6 @@ Material as the structural base (scaffold, text fields, dialogs, navigation), he
 - [x] Team analysis (domain): `analyseTeam`, `TypeMatchup`, tested against the real type chart (D18).
 - [x] State: `pokemonProvider` (family), `typeChartProvider`, `teamAnalysisProvider` with `Loading` / `Unavailable` / `Ready` states (D19).
 - [x] Search state (index provider, query, ranked results), with the search UI (D23).
-- [ ] UI, in the order set out in [01-ui.md](01-ui.md). Done: theme (light, dark, system), sparse six-slot team (D20), search, team slots with add and remove, wide layout and bottom sheet (D23 to D25). Also done: the coverage matrix (D26). To do: reordering (D21), then the control panel, then animation and the flip detail dialog (D22), then compare.
-- [ ] Control panel UI (the levers' state already exists as `faultSettingsProvider`).
+- [ ] UI, in the order set out in [01-ui.md](01-ui.md). Done: theme (light, dark, system), sparse six-slot team (D20), search, team slots with add and remove, wide layout and bottom sheet (D23 to D25). Also done: the coverage matrix (D26) and the control panel (D27). To do: reordering (D21), then animation and the flip detail dialog (D22), then compare.
+- [x] Control panel UI: levers, retry log, clear cache and reload, end drawer (D27).
 - [ ] README: setup, decisions, QA approach, manual test plan, known limitations.

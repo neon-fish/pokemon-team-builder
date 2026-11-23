@@ -5,6 +5,7 @@ import 'package:pokemon_team_builder/app/app.dart';
 import 'package:pokemon_team_builder/app/providers.dart';
 import 'package:pokemon_team_builder/core/api_failure.dart';
 import 'package:pokemon_team_builder/core/result.dart';
+import 'package:pokemon_team_builder/features/control_panel/control_panel.dart';
 import 'package:pokemon_team_builder/features/coverage/coverage_matrix.dart';
 import 'package:pokemon_team_builder/features/search/search_panel.dart';
 import 'package:pokemon_team_builder/features/team/team_notifier.dart';
@@ -257,6 +258,71 @@ void main() {
 
       expect(find.text('Your team (6 of 6)'), findsOneWidget);
       expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('the control panel', () {
+    Future<void> open(WidgetTester tester) async {
+      await tester.tap(find.byTooltip('Simulate problems'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('is closed to begin with', (tester) async {
+      useScreenSize(tester, desktopScreen);
+      await pumpApp(tester);
+
+      expect(find.byType(ControlPanel), findsNothing);
+      expect(find.byTooltip('Simulate problems'), findsOneWidget);
+    });
+
+    testWidgets('slides in from the right edge when the button is tapped', (
+      tester,
+    ) async {
+      useScreenSize(tester, desktopScreen);
+      await pumpApp(tester);
+
+      await open(tester);
+
+      expect(find.byType(ControlPanel), findsOneWidget);
+      final drawer = tester.getRect(find.byType(Drawer));
+      expect(drawer.right, desktopScreen.width);
+      expect(drawer.width, lessThan(desktopScreen.width / 2));
+    });
+
+    testWidgets('leaves a strip of the page showing on a phone', (
+      tester,
+    ) async {
+      useScreenSize(tester, phoneScreen);
+      await pumpApp(tester);
+
+      await open(tester);
+
+      final drawer = tester.getRect(find.byType(Drawer));
+      expect(drawer.right, phoneScreen.width);
+      expect(drawer.left, greaterThanOrEqualTo(56));
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('closes with its own button', (tester) async {
+      useScreenSize(tester, desktopScreen);
+      await pumpApp(tester);
+      await open(tester);
+
+      await tester.tap(find.byTooltip('Close'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ControlPanel), findsNothing);
+    });
+
+    testWidgets('closes when the page behind it is tapped', (tester) async {
+      useScreenSize(tester, phoneScreen);
+      await pumpApp(tester);
+      await open(tester);
+
+      await tester.tapAt(const Offset(10, 400));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ControlPanel), findsNothing);
     });
   });
 

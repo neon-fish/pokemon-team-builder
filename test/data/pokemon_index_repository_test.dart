@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pokemon_team_builder/core/api_failure.dart';
 import 'package:pokemon_team_builder/core/result.dart';
+import 'package:pokemon_team_builder/data/caching_api_client.dart';
 import 'package:pokemon_team_builder/data/pokemon_index_repository.dart';
 
 import '../support/fake_api_client.dart';
@@ -110,6 +111,23 @@ void main() {
       final result = await PokemonIndexRepository(api).loadIndex();
 
       expect(result.failureOrNull, isA<MalformedResponseFailure>());
+    });
+
+    test('a retry after an unusable response asks the API again', () async {
+      var asked = 0;
+      final api = FakeApiClient(
+        (_) => ++asked == 1
+            ? const Ok({'results': <Object?>[]})
+            : Ok(loadFixture('pokemon_index.json')),
+      );
+      final repository = PokemonIndexRepository(CachingApiClient(api));
+
+      final first = await repository.loadIndex();
+      final second = await repository.loadIndex();
+
+      expect(first.failureOrNull, isA<MalformedResponseFailure>());
+      expect(second.valueOrNull, hasLength(5));
+      expect(api.calls, hasLength(2));
     });
   });
 }

@@ -5,6 +5,8 @@ import 'package:pokemon_team_builder/app/providers.dart';
 import 'package:pokemon_team_builder/core/api_failure.dart';
 import 'package:pokemon_team_builder/core/result.dart';
 import 'package:pokemon_team_builder/data/http/fault_settings.dart';
+import 'package:pokemon_team_builder/features/control_panel/fault_settings_notifier.dart';
+import 'package:pokemon_team_builder/features/control_panel/retry_log.dart';
 
 import '../support/fake_transport.dart';
 
@@ -71,6 +73,78 @@ void main() {
 
       expect(result.failureOrNull, isA<NotFoundFailure>());
       expect(transport.calls, hasLength(1));
+    });
+  });
+
+  group('the retry log', () {
+    test('starts empty', () {
+      final container = containerWith(FakeTransport());
+
+      expect(container.read(retryLogProvider), isEmpty);
+    });
+
+    test('notes each retry as the stack makes it', () {
+      fakeAsync((async) {
+        final transport = FakeTransport([status(503), status(503), okJson(1)]);
+        final container = containerWith(transport);
+
+        settle(async, container.read(apiClientProvider).getJson(url));
+
+        final log = container.read(retryLogProvider);
+        expect(log, hasLength(2));
+        // Newest first: the second failed attempt, then the first.
+        expect([for (final event in log) event.failedAttempt], [2, 1]);
+        expect(log.first.url, url);
+        expect(log.first.failure, isA<ServerFailure>());
+      });
+    });
+
+    test('has nothing to say about a request that works first time', () {
+      fakeAsync((async) {
+        final container = containerWith(FakeTransport([okJson(1)]));
+
+        settle(async, container.read(apiClientProvider).getJson(url));
+
+        expect(container.read(retryLogProvider), isEmpty);
+      });
+    });
+
+    test('does not log a failure that is not retried', () {
+      fakeAsync((async) {
+        final container = containerWith(FakeTransport([status(404)]));
+
+        settle(async, container.read(apiClientProvider).getJson(url));
+
+        expect(container.read(retryLogProvider), isEmpty);
+      });
+    });
+  });
+
+  group('the cache', () {
+    test('is the one the app uses, so clearing it forces a new request', () {
+      fakeAsync((async) {
+        final transport = FakeTransport([okJson('first'), okJson('second')]);
+        final container = containerWith(transport);
+        final client = container.read(apiClientProvider);
+
+        settle(async, client.getJson(url));
+        expect(settle(async, client.getJson(url)).valueOrNull, 'first');
+        expect(transport.calls, hasLength(1));
+
+        container.read(apiCacheProvider).clear();
+
+        expect(settle(async, client.getJson(url)).valueOrNull, 'second');
+        expect(transport.calls, hasLength(2));
+      });
+    });
+
+    test('is the same object as the client the app asks for', () {
+      final container = containerWith(FakeTransport());
+
+      expect(
+        container.read(apiClientProvider),
+        same(container.read(apiCacheProvider)),
+      );
     });
   });
 

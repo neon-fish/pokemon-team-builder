@@ -18,10 +18,9 @@ class PokemonIndexRepository {
   Future<Result<List<PokemonSummary>>> loadIndex() async {
     // The limit is far above the roughly 1,350 entries that exist, so the whole
     // list arrives in a single page, with room to grow.
-    final result = await _client.getJson(
-      Uri.parse('$pokeApiBaseUrl/pokemon?limit=5000'),
-    );
-    return parseResult(result, parsePokemonIndex);
+    final url = Uri.parse('$pokeApiBaseUrl/pokemon?limit=5000');
+    final result = await _client.getJson(url);
+    return parseResponse(_client, url, result, parsePokemonIndex);
   }
 }
 

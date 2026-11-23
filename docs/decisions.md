@@ -132,7 +132,8 @@ Format: **Decision**, **Options considered**, **Why**, **Trade-offs / revisit if
   - Cached JSON maps are shared, so a caller that mutated one would change it for everyone. Repositories turn them into immutable models straight away.
   - Eviction is by age of storage, not by last use.
   - Nothing is remembered across a page reload. Small, valuable data (the team, perhaps the type chart) will be persisted by the repositories that own it.
-  - There is no `clear` yet; it is added when the control panel needs it.
+  - `clear()` was added for the control panel (D27).
+- **Amended (found with the control panel): a response the app cannot use is forgotten.** "Only successes are stored" was true at the HTTP level: a 200 with valid JSON counts as a success. But a response can be valid JSON and still the wrong shape, and that is only discovered later, when a repository parses it. The cache had already stored it, so "Try again" was handed the same bad answer from the cache, with no request made, and could not recover until the entry expired or the cache was cleared. Now `CachingApiClient` can `forget(url)` (the small `ResponseCache` interface), and the repositories call it through `parseResponse` when an answer arrived but failed to parse. Tests: each repository over a real cache (bad answer, then good), `parseResponse` itself, and the user's whole flow through the control panel. A client without a cache (the fakes) is simply unaffected.
 
 ## D16. Defensive parsing: small hand-written readers, one exception type, caught at the repository
 
@@ -277,3 +278,17 @@ Format: **Decision**, **Options considered**, **Why**, **Trade-offs / revisit if
   - The order choice is not saved.
   - Rows are not animated when they move.
   - Offence is not shown (that would need move data; see the overview).
+
+## D27. The control panel, the retry log and the five-second timeout
+
+- **An end drawer, from an app-bar icon.** It slides in from the right edge (up to 380 px wide, narrower on a phone so a strip of the page shows and tapping it closes the panel). It works at every width, never takes permanent space and can be opened mid-demo. The icon is a plain "tune" button with the tooltip "Simulate problems". The title and close button are pinned; everything under them scrolls.
+- **The levers** are the ones `FaultSettings` already had: delay (0 to 5 s), failure rate (0 to 100%), which failures may happen (chips), how long a simulated 429 asks to wait, and an offline switch, plus "Back to normal". The wait slider is disabled unless "Too many requests" is chosen, since it would do nothing. At least one kind of failure always stays chosen: with none, the injector injects nothing, and a failure rate would silently have no effect.
+- **Not saved.** A reload puts every lever back to normal, so one left on cannot make the next visit look broken. The README's manual test plan should say so.
+- **The retry log.** The retry layer already had an `onRetry` hook; the composition root now feeds it into `retryLogProvider`, which keeps the latest 50 events, newest first. The panel shows each as the request, the attempt that failed, the reason, and how long the app will wait. It shows only waits before a retry, not the final failure (that appears where the data was needed) and not cache hits.
+- **"Clear cache and reload".** Clearing the cache alone would show nothing, since providers already hold their data. So `DataReloader` clears the cache and invalidates the index, every Pokémon and the type chart, and everything on screen asks again. The cache is its own provider (`apiCacheProvider`) so the panel can reach `clear()`; `apiClientProvider` is the same object under its general name, which is what tests replace with fakes. Requests already under way are not stopped by a clear and may store their answer when they finish.
+- **The timeout is now five seconds (was ten).** With three attempts and the backoff, a request that never answers is given up on after about 16.5 seconds, not about 31. Longer was a poor fit for a live demonstration of the timeout failure, and PokéAPI normally answers in well under a second. Not chosen: retrying a timeout once only (about 20 s, and needs failure-specific limits in the retry policy); both (about 10.5 s, more code).
+- **Tested end to end.** A test runs the whole app over the real networking stack and a fake network: failures at 100%, "Clear cache and reload", then it checks that each request was tried three times, both waits are logged, the team slot and the coverage matrix say what failed and offer a retry, and that going back to normal and retrying recovers. A second checks a two-second delay is waited for with no retries at all.
+- **Known limitations:**
+  - No cache hit or stale-refresh events in the log.
+  - The log has no timestamps, only order.
+  - A timed-out request carries on in the background (Dart cannot cancel it); only its answer is ignored (D12).

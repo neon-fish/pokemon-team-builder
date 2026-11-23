@@ -130,9 +130,23 @@ void main() {
         final result = settle(
           async,
           client.getJson(url),
-          elapse: const Duration(seconds: 11),
+          elapse: const Duration(seconds: 6),
         );
         expect(result.failureOrNull, isA<TimeoutFailure>());
+      });
+    });
+
+    test('by default gives up after five seconds, and not before', () {
+      fakeAsync((async) {
+        final client = HttpApiClient(_HangingTransport());
+        Result<Object?>? result;
+        unawaited(client.getJson(url).then((value) => result = value));
+
+        async.elapse(const Duration(milliseconds: 4900));
+        expect(result, isNull, reason: 'still waiting at 4.9 s');
+
+        async.elapse(const Duration(milliseconds: 200));
+        expect(result?.failureOrNull, isA<TimeoutFailure>());
       });
     });
 

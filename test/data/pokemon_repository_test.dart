@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pokemon_team_builder/core/api_failure.dart';
 import 'package:pokemon_team_builder/core/result.dart';
+import 'package:pokemon_team_builder/data/caching_api_client.dart';
 import 'package:pokemon_team_builder/data/pokemon_repository.dart';
 import 'package:pokemon_team_builder/domain/pokemon_type.dart';
 
@@ -174,6 +175,33 @@ void main() {
       final result = await PokemonRepository(api).loadPokemon(25);
 
       expect(result.failureOrNull, isA<MalformedResponseFailure>());
+    });
+
+    test('a retry after a malformed response asks the API again', () async {
+      // The first answer is valid JSON of the wrong shape; the second is right.
+      var asked = 0;
+      final api = FakeApiClient(
+        (_) => ++asked == 1 ? const Ok({'id': 25}) : Ok(pikachu()),
+      );
+      // Through a real cache, which would otherwise keep the bad answer.
+      final repository = PokemonRepository(CachingApiClient(api));
+
+      final first = await repository.loadPokemon(25);
+      final second = await repository.loadPokemon(25);
+
+      expect(first.failureOrNull, isA<MalformedResponseFailure>());
+      expect(second.valueOrNull?.name, 'pikachu');
+      expect(api.calls, hasLength(2));
+    });
+
+    test('a good answer is still kept', () async {
+      final api = FakeApiClient((_) => Ok(pikachu()));
+      final repository = PokemonRepository(CachingApiClient(api));
+
+      await repository.loadPokemon(25);
+      await repository.loadPokemon(25);
+
+      expect(api.calls, hasLength(1));
     });
   });
 }

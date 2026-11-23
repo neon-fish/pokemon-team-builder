@@ -13,10 +13,9 @@ class PokemonRepository {
   final ApiClient _client;
 
   Future<Result<Pokemon>> loadPokemon(int id) async {
-    final result = await _client.getJson(
-      Uri.parse('$pokeApiBaseUrl/pokemon/$id'),
-    );
-    return parseResult(result, parsePokemon);
+    final url = Uri.parse('$pokeApiBaseUrl/pokemon/$id');
+    final result = await _client.getJson(url);
+    return parseResponse(_client, url, result, parsePokemon);
   }
 }
 

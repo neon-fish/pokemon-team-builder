@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pokemon_team_builder/core/api_failure.dart';
 import 'package:pokemon_team_builder/core/result.dart';
+import 'package:pokemon_team_builder/data/caching_api_client.dart';
 import 'package:pokemon_team_builder/data/type_chart_repository.dart';
 import 'package:pokemon_team_builder/domain/pokemon_type.dart';
 
@@ -188,5 +189,28 @@ void main() {
         expect(result.failureOrNull, isA<MalformedResponseFailure>());
       },
     );
+
+    test('a retry asks again for the one answer that was no good', () async {
+      // Water answers with the wrong shape the first time, and correctly after.
+      var waterAsked = 0;
+      final api = fakeApi(
+        override: (url) {
+          if (url.path.endsWith('/type/water') && ++waterAsked == 1) {
+            return const Ok({'unexpected': 'shape'});
+          }
+          return null;
+        },
+      );
+      final repository = TypeChartRepository(CachingApiClient(api));
+
+      final first = await repository.loadTypeChart();
+      final second = await repository.loadTypeChart();
+
+      expect(first.failureOrNull, isA<MalformedResponseFailure>());
+      expect(second.valueOrNull, isNotNull);
+      // Eighteen the first time, then only water again: the other seventeen
+      // good answers were kept.
+      expect(api.calls, hasLength(PokemonType.values.length + 1));
+    });
   });
 }

@@ -17,10 +17,12 @@ import 'package:pokemon_team_builder/data/api_client.dart';
 ///   fetched, the second caller shares the first caller's request.
 ///
 /// Only successes are stored. A failure is never cached, so the next request
-/// tries again.
+/// tries again. A "success" here means a response that arrived and was valid
+/// JSON; whether it is the right shape is for the caller to judge, and a caller
+/// that finds it is not should [forget] it, or a retry would get the same answer.
 ///
 /// Placed outside the concurrency limiter, so cache hits never take a slot.
-class CachingApiClient implements ApiClient {
+class CachingApiClient implements ApiClient, ResponseCache {
   CachingApiClient(
     this._inner, {
     this.ttl = const Duration(minutes: 10),
@@ -41,6 +43,16 @@ class CachingApiClient implements ApiClient {
 
   final Map<Uri, _Entry> _entries = {};
   final Map<Uri, Future<Result<Object?>>> _inFlight = {};
+
+  @override
+  void forget(Uri url) {
+    _entries.remove(url);
+  }
+
+  /// Forgets every stored response, so the next request for each goes to the
+  /// network. Requests already under way are not stopped, and may store their
+  /// answer when they finish.
+  void clear() => _entries.clear();
 
   @override
   Future<Result<Object?>> getJson(Uri url) {
