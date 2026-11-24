@@ -82,6 +82,40 @@ void main() {
     expect(app.read(teamAnalysisProvider), isA<TeamAnalysisLoading>());
   });
 
+  group('while the type chart is loaded again', () {
+    test('a failure gives way to loading, not the old failure', () async {
+      chartFails = true;
+      final app = appWithTeam([_pikachu]);
+      expect(await settledAnalysis(app), isA<TeamAnalysisUnavailable>());
+
+      // The retry has started but has not finished.
+      app.invalidate(typeChartProvider);
+
+      expect(app.read(teamAnalysisProvider), isA<TeamAnalysisLoading>());
+    });
+
+    test('a good chart stays on show, so the matrix does not flash', () async {
+      final app = appWithTeam([_pikachu]);
+      ready(await settledAnalysis(app));
+
+      app.invalidate(typeChartProvider);
+
+      expect(app.read(teamAnalysisProvider), isA<TeamAnalysisReady>());
+    });
+
+    test('and the retry, once answered, replaces the failure', () async {
+      chartFails = true;
+      final app = appWithTeam([_pikachu]);
+      await settledAnalysis(app);
+
+      chartFails = false;
+      app.invalidate(typeChartProvider);
+      await app.read(typeChartProvider.future);
+
+      expect(app.read(teamAnalysisProvider), isA<TeamAnalysisReady>());
+    });
+  });
+
   test('analyses a loaded team', () async {
     final app = appWithTeam([_pikachu]);
 

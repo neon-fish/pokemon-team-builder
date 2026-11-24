@@ -57,6 +57,18 @@ void main() {
     ]);
   });
 
+  test(
+    'a list that has loaded stays on show while it is loaded again',
+    () async {
+      final app = appWithApi();
+      await app.read(pokemonIndexProvider.future);
+
+      app.invalidate(pokemonIndexProvider);
+
+      expect(namesIn(app), hasLength(5));
+    },
+  );
+
   test('narrows as the query changes', () async {
     final app = appWithApi();
     await app.read(pokemonIndexProvider.future);
@@ -119,6 +131,17 @@ void main() {
 
       expect(app.read(pokemonIndexProvider).hasError, isFalse);
       expect(api.calls, hasLength(1));
+    });
+
+    test('while retrying it is loading, not the old failure', () async {
+      indexFails = true;
+      final app = appWithApi();
+      await app.read(pokemonIndexProvider.future);
+
+      // The retry has started but has not finished.
+      app.invalidate(pokemonIndexProvider);
+
+      expect(app.read(searchProvider), isA<SearchLoading>());
     });
 
     test('retrying recovers', () async {

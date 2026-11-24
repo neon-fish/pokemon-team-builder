@@ -55,8 +55,15 @@ final class TeamAnalysisReady extends TeamAnalysisState {
 /// member's details. It updates by itself as any of them load or change.
 final teamAnalysisProvider = Provider<TeamAnalysisState>((ref) {
   final members = ref.watch(teamMembersProvider);
-  final chartResult = ref.watch(typeChartProvider).value;
+  final chartAsync = ref.watch(typeChartProvider);
+  final chartResult = chartAsync.value;
   if (members == null || chartResult == null) {
+    return const TeamAnalysisLoading();
+  }
+  // While a reload is under way, `.value` still holds the previous result. A
+  // good chart can stay on show meanwhile, but a failure must not: it would sit
+  // there, with its "Try again" button, as if the retry had not started.
+  if (chartAsync.isLoading && chartResult is Err) {
     return const TeamAnalysisLoading();
   }
 

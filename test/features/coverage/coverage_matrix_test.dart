@@ -28,6 +28,23 @@ class _HeldApiClient implements ApiClient {
   }
 }
 
+/// An [ApiClient] that can be told to leave type chart requests unanswered,
+/// like a slow network, and otherwise passes everything to [inner].
+class _HoldableApiClient implements ApiClient {
+  _HoldableApiClient(this.inner);
+
+  final ApiClient inner;
+  var holdTypeRequests = false;
+
+  @override
+  Future<Result<Object?>> getJson(Uri url) {
+    if (holdTypeRequests && url.path.contains('/type/')) {
+      return Completer<Result<Object?>>().future;
+    }
+    return inner.getJson(url);
+  }
+}
+
 void main() {
   final chartResponses =
       loadFixture('type_chart_responses.json')! as Map<String, Object?>;
@@ -169,6 +186,25 @@ void main() {
 
       expect(find.byType(MatchupRow), findsNWidgets(18));
       expect(find.text('Try again'), findsNothing);
+    });
+  });
+
+  group('while trying the type chart again after a failure', () {
+    testWidgets('shows a spinner, not the old failure', (tester) async {
+      chartFails = true;
+      final client = _HoldableApiClient(api);
+      await pumpMatrix(tester, saved: '{"ids":[25]}', client: client);
+      expect(find.text('Try again'), findsOneWidget);
+
+      // The retry is under way but has not been answered.
+      client.holdTypeRequests = true;
+      await tester.tap(find.text('Try again'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.text('Try again'), findsNothing);
+      expect(find.textContaining('could not be loaded'), findsNothing);
     });
   });
 

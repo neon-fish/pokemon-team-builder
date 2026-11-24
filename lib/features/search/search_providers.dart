@@ -58,15 +58,20 @@ final class SearchReady extends SearchState {
 /// strings, which is far too little work to need waiting for the user to stop
 /// typing.
 final searchProvider = Provider<SearchState>((ref) {
+  final index = ref.watch(pokemonIndexProvider);
   // `.value` is null while an `AsyncValue` is still loading.
-  final indexResult = ref.watch(pokemonIndexProvider).value;
+  final indexResult = index.value;
   if (indexResult == null) return const SearchLoading();
+  // During a reload `.value` still holds the previous result. A list that has
+  // loaded can stay on show, but a failure must not: it would sit there, with
+  // its "Try again" button, as if the retry had not started.
+  if (index.isLoading && indexResult is Err) return const SearchLoading();
 
   switch (indexResult) {
     case Err(:final failure):
       return SearchUnavailable(failure);
-    case Ok(value: final index):
+    case Ok(value: final summaries):
       final query = ref.watch(searchQueryProvider);
-      return SearchReady(searchPokemon(index, query), query: query.trim());
+      return SearchReady(searchPokemon(summaries, query), query: query.trim());
   }
 });
