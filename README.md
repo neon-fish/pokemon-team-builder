@@ -74,6 +74,7 @@ Tests use fakes, not the network: an in-memory `KeyValueStore`, a fake transport
 - **Data:** each decorator alone (retry timing to the millisecond with `fake_async`, limiter, cache, de-duplication, stale-while-revalidate), the parsers against trimmed real responses, and the repositories.
 - **Widgets:** every state of each feature (loading, empty, error with retry, incomplete), drag and drop, screen-reader actions, the control panel, and the two animations (pumped through their durations: the throw-in's reveal waits for the ball and for the data and never replays, the flip shows the card then the dialog and back again, and reduced motion skips both).
 - **Flow:** the whole app over the real networking stack and a fake network. Failures at 100%, three attempts each, the waits logged, the screen saying what failed, and recovery after going back to normal.
+- **Live contract (opt-in):** `flutter test --run-skipped --tags live` asks the real PokeAPI for the index, two Pokémon and all 18 types, parses them with the app's own code, and compares each saved fixture's shape with the live response. It is skipped by default. A failure means the API changed, or had a bad moment; the message names the request. (D32)
 - **Layout and accessibility:** overflow checks at 320 px wide and double text size, contrast checks for every type colour and matrix cell in both themes, and semantics checks.
 
 Several tests were written to fail first, or checked to fail with the behaviour removed. Each of those is noted in the decision log. One of them found that the stat bars rendered at zero height, which a property check had missed (D28). A check that measures the rendered size now catches it.
@@ -114,11 +115,11 @@ Not yet checked by hand on a physical touch screen or with a real screen reader.
 - **Names:** hyphenated names such as `ho-oh` display as `Ho Oh` (D24). UI text is English only.
 - **Not saved:** the control-panel levers, the matrix order and the chosen analysis tab.
 - **Artwork** is the large official picture, scaled down on decode but fully downloaded. (D23)
-- **Fixtures** are trimmed copies of real responses, and nothing checks them against the live API.
+- **Fixtures** are trimmed copies of real responses. The opt-in live test checks their shape, by hand and not in any scheduled run. It compares shapes, not values. (D32)
 
 ## With more time
 
-- A live contract test, opt-in and tagged, that checks the fixtures against the real API.
+- Running the live contract test on a schedule, so API drift shows up without anyone remembering to look.
 - A compare view, reusing the radar chart.
 - A browser-driven integration test for persistence and drag, which widget tests only simulate.
 - Offence coverage from move data, and a Box (a larger collection the team is drawn from).

@@ -1,0 +1,5 @@
+tags:
+  # Tests that talk to the real PokeAPI. Skipped in the normal run; to run them:
+  #   flutter test --run-skipped --tags live
+  live:
+    skip: "Uses the real PokeAPI. Run with: flutter test --run-skipped --tags live"

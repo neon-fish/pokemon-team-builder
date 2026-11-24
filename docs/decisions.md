@@ -141,7 +141,7 @@ Format: **Decision**, **Options considered**, **Why**, **Trade-offs / revisit if
 - **Options considered:** `json_serializable` / `freezed` (code generation, extra dependencies, and generated casts that throw unhelpful errors); parse functions that return `Result` at every step (more ceremony for no extra safety here).
 - **Why:** Plain functions can be read and explained line by line. Throwing inside the parse step and catching at a single boundary keeps the parsing code short, while the public API of every repository still follows D11 (failures are values).
 - **Forward compatibility:** values we do not model (for example the `stellar` type) are skipped rather than treated as errors, so a new entry in the API cannot break the app. A wrong *shape* (a missing list, a string where an object should be) is an error.
-- **Fixtures:** `test/fixtures/` holds trimmed copies of real responses, loaded by `loadFixture`. A later opt-in live test can check they still match the real API.
+- **Fixtures:** `test/fixtures/` holds trimmed copies of real responses, loaded by `loadFixture`. The opt-in live test checks they still match the real API (D32).
 - **Layering:** `PokemonType` and `TypeChart` live in `lib/domain` as plain Dart. The data layer knows about them, never the other way round.
 
 ### D16 addendum: the Pokémon detail
@@ -375,3 +375,15 @@ Format: **Decision**, **Options considered**, **Why**, **Trade-offs / revisit if
   - Checked in rendered frames and widget tests only, not in a browser by me.
   - "Highest" and "lowest" name one member on a tie even if several share the value.
   - Base stats only: no levels, natures or training, so the averages describe the species, not a trained team.
+
+## D32. An opt-in live contract test
+
+- **Why:** every other test uses fixtures, which are trimmed copies of real responses, so nothing noticed if PokeAPI changed shape. This test asks the real API, and says so if the fixtures have drifted.
+- **Opt-in, by a tag.** `test/live/pokeapi_contract_test.dart` is tagged `live`, and `dart_test.yaml` skips that tag. The normal `flutter test` shows it as skipped; `flutter test --run-skipped --tags live` runs it. It is not in the default run because it needs the network, and a public API having a bad moment should not fail a build that did nothing wrong.
+- **What it checks.**
+  - **The app's own code against real responses:** the index (over 1,000 entries, Pikachu among them), Pikachu and an alternative form (Koraidon, 10264), and the whole type chart with a few spot checks (electric against ground is 0×, and so on).
+  - **The fixtures:** each saved fixture's shape against the matching live response, all 18 type fixtures included. About 25 requests in all, one pass.
+- **Shape, not values.** `shapeDifferences` (in `test/live/json_shape.dart`, with its own ordinary tests) reports every key the fixture has and the live response lacks, and every value that has changed kind. Extra keys are fine, because the fixtures are trimmed. A list is judged by its first item. A null on either side is fine, as the API leaves optional fields null. Values are never compared: stats legitimately change between games.
+- **The same layers as the app, less the cache and the simulated faults.** The retrying layer is kept, so a passing wobble at the API does not fail a run. Plain `test`, not `testWidgets`, because Flutter's widget test binding blocks real network access.
+- **Checked to fail.** With one fixture's key renamed and another's number turned into a string, the right tests failed, with messages naming the fixture and the path (`.stats[0].base_stat: was a string, is now a number`). They passed again with the fixtures restored. At the first run (24 November 2026) every fixture matched.
+- **Known limitations:** run by hand, not on a schedule. A failure does not say whether the API changed or was briefly unwell, so check the named request by hand. It only covers the endpoints and fields the app uses.

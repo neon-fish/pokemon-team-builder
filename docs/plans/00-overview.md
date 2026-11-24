@@ -97,7 +97,7 @@ Material as the structural base (scaffold, text fields, dialogs, navigation), he
 |---|---|
 | Creativity & product thinking | Team coverage analysis rather than a list-and-detail Pokédex |
 | Reliability & resilience | Decorator stack, typed failures, stale-while-revalidate, explicit loading / error / empty states everywhere, control panel |
-| Testing | Unit: type-chart maths, parsers, retry/backoff (fake clock), cache, limiter. Widget: state transitions, retry flows, control panel. One end-to-end flow on a fake transport. An opt-in live contract test against the real API is planned, not built. |
+| Testing | Unit: type-chart maths, parsers, retry/backoff (fake clock), cache, limiter. Widget: state transitions, retry flows, control panel. One end-to-end flow on a fake transport. An opt-in, tagged live contract test checks the saved fixtures against the real API (D32). |
 | QA & documentation | README with manual test plan (throttling, offline, clear storage, narrow widths, keyboard and screen-reader pass) and known limitations |
 | Code quality & architecture | Strict lints, small files, no logic in widgets, pure domain layer |
 | UX & polish | Themed Material, custom components, responsive, accessible, no jank during request fan-out |
