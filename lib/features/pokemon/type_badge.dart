@@ -22,11 +22,10 @@ class TypeBadge extends StatelessWidget {
 
 /// A grey stand-in for a [TypeBadge] while the types are still loading.
 ///
-/// It is built from the same shape as the real badge, with invisible text, so
-/// it has exactly the same size and text baseline. A `ListTile` positions its
-/// title and subtitle using the subtitle's baseline, so a stand-in that was only
-/// roughly the right size would make the row's content jump when the real badges
-/// replace it.
+/// Built from the same shape as the real badge, with invisible text, so it has
+/// the same size and text baseline. A `ListTile` positions its title and
+/// subtitle from the subtitle's baseline, so a stand-in of only roughly the
+/// right size would make the row jump when the real badges arrive.
 class TypeBadgePlaceholder extends StatelessWidget {
   const TypeBadgePlaceholder({super.key});
 

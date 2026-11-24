@@ -4,7 +4,7 @@ import 'package:pokemon_team_builder/app/home_screen.dart';
 import 'package:pokemon_team_builder/app/theme.dart';
 import 'package:pokemon_team_builder/features/theme/theme_mode_notifier.dart';
 
-/// Root widget. Routing will live here; providers are assembled in
+/// Root widget: the theme and the home screen. Providers are assembled in
 /// `providers.dart`.
 class PokemonTeamBuilderApp extends ConsumerWidget {
   const PokemonTeamBuilderApp({super.key});

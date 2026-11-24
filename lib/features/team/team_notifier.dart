@@ -24,8 +24,7 @@ class TeamNotifier extends AsyncNotifier<Team> {
   Future<void> add(int id) => _change((team) => team.add(id), arrives: true);
 
   /// Puts a Pokémon in a specific slot and saves the team. If that slot is
-  /// already occupied, or if the index is out of range, does
-  /// nothing.
+  /// already occupied, or the index is out of range, does nothing.
   Future<void> addAt(int index, int id) =>
       _change((team) => team.addAt(index, id), arrives: true);
 

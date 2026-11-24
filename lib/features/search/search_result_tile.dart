@@ -20,15 +20,13 @@ const _loadDelay = Duration(milliseconds: 150);
 
 /// One row of the search results.
 ///
-/// The name and number come from the search list, so they show at once. The
-/// picture and types need the Pokémon's details, which each row loads for
-/// itself once it has been on screen for a moment ([_loadDelay]). The list
-/// builds only the rows on screen, so scrolling loads details as they are
-/// needed rather than all at once.
+/// The name and number come from the search list and show at once. The picture
+/// and types need the Pokémon's details, which each row loads for itself once
+/// it has been on screen for a moment ([_loadDelay]).
 ///
 /// Tapping the row adds the Pokémon to the team, then calls [onPicked] (for a
-/// screen that wants to react, such as closing the search). When the team is
-/// full the row is disabled.
+/// host that wants to react, such as closing the search sheet). When the team
+/// is full the row is disabled.
 class SearchResultTile extends ConsumerStatefulWidget {
   const SearchResultTile(this.summary, {this.onPicked, super.key});
 
@@ -94,11 +92,9 @@ class _SearchResultTileState extends ConsumerState<SearchResultTile> {
         },
       ),
       title: Text(displayName(summary.name)),
-      // One `Wrap` for every state. A `ListTile` makes its subtitle as wide as
-      // the text area, and a `Wrap` lets each child keep its own width, so the
-      // badge, its placeholder and the message all sit at the left. Using the
-      // same widget for each also keeps their layout the same, so the content
-      // does not jump when the state changes.
+      // One `Wrap` for every state, so the badge, its placeholder and the
+      // message all sit at the left at their own width, and the layout does not
+      // jump when the state changes.
       subtitle: Wrap(
         spacing: 6,
         children: switch (details) {

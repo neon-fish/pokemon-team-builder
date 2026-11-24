@@ -26,7 +26,8 @@ class HttpApiClient implements ApiClient {
   Future<Result<Object?>> getJson(Uri url) async {
     final TransportResponse response;
     try {
-      // Known limitation: a Dart future cannot be cancelled, so after a timeout the underlying request carries on and its result is discarded.
+      // A Dart future cannot be cancelled, so after a timeout the request
+      // carries on and its result is discarded.
       response = await _transport.get(url).timeout(timeout);
     } on TimeoutException {
       return const Err(TimeoutFailure());
@@ -49,18 +50,20 @@ class HttpApiClient implements ApiClient {
         ),
       ),
       >= 500 => Err(ServerFailure(status)),
-      // Also catches 1xx and 3xx, which is a slightly misleading label, but the browser follows redirects so they should not occur in practice.
+      // Also 1xx and 3xx, which should not occur: the browser follows redirects.
       _ => Err(ClientErrorFailure(status)),
     };
   }
 
   Result<Object?> _decode(String body) {
-    // An empty body, including a 204, counts as malformed: every endpoint we use is expected to return JSON.
+    // An empty body, including a 204, counts as malformed: every endpoint we
+    // use returns JSON.
     if (body.trim().isEmpty) {
       return const Err(MalformedResponseFailure('Empty response body'));
     }
     try {
-      // Decodes on the main thread. Fine for now; measure before optimising, since web has no true background isolates to move it to.
+      // Decoded on the main thread. Web has no true background isolate to move
+      // it to, so measure before optimising.
       return Ok(jsonDecode(body));
     } on FormatException catch (e) {
       return Err(MalformedResponseFailure('Invalid JSON: ${e.message}'));
