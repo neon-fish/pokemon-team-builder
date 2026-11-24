@@ -17,7 +17,8 @@ import 'package:pokemon_team_builder/features/control_panel/fault_settings_notif
 import 'package:pokemon_team_builder/features/control_panel/retry_log.dart';
 import 'package:pokemon_team_builder/features/theme/theme_mode_repository.dart';
 
-/// Where the team is saved. Tests override this with an in-memory store.
+/// Where the team and theme choice are saved. Tests override this with an
+/// in-memory store.
 final keyValueStoreProvider = Provider<KeyValueStore>(
   (ref) => SharedPreferencesKeyValueStore(),
 );

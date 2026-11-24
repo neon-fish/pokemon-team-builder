@@ -96,9 +96,9 @@ class RetryingApiClient implements ApiClient {
       return retryAfter > policy.maxRetryAfter ? null : retryAfter;
     }
 
-    // Exponential backoff, capped. "Equal jitter": half fixed, half random, so
-    // many clients retrying together spread out without ever waiting ~0.
-    // The first failure waits the base delay, the second twice that, and so on.
+    // Exponential backoff, capped: the base delay after the first failure,
+    // twice that after the second, and so on. "Equal jitter" (half fixed, half
+    // random) spreads out clients retrying together without ever waiting ~0.
     // The exponent is capped so the power cannot grow without bound.
     final exponent = min(failedAttempt - 1, 20);
     final uncapped = policy.baseDelay.inMicroseconds * pow(2, exponent);

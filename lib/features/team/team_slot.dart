@@ -19,12 +19,10 @@ import 'package:pokemon_team_builder/features/team/throw_in.dart';
 
 /// How long a Pokémon has to be held before it can be dragged.
 ///
-/// A plain drag would start after a pixel or so of movement with a mouse, so a
-/// slightly shaky click would drag instead of opening the details, and on a
-/// touch screen it would compete with scrolling the page. Holding first avoids
-/// both: if the pointer moves before the time is up, the press is left to
-/// whatever else wants it (a click, or a scroll). (The default is half a
-/// second; that felt slow with a mouse.)
+/// A plain drag starts after a pixel or so of mouse movement, so a shaky click
+/// would drag instead of opening the details, and on touch it would compete
+/// with scrolling. Holding first leaves an early move to whatever else wants the
+/// press (D21). The default of half a second felt slow with a mouse.
 const dragHoldDelay = Duration(milliseconds: 300);
 
 /// How faded the Pokémon's own slot looks while it is being dragged away.
@@ -182,12 +180,9 @@ class _FilledSlot extends ConsumerWidget {
     final card = Hero(
       tag: slotHeroTag(index),
       flightShuttleBuilder: flipShuttleBuilder,
-      // While the dialog is open a `Hero` normally leaves a blank space where
-      // the card was. That space would stay in the slot the dialog was opened
-      // from, even after the buttons in the dialog move the Pokémon to another
-      // slot, so the cards behind the dialog would not follow the move until the
-      // dialog closed. Showing the real card instead keeps every card live; the
-      // flying copy just lifts off above it.
+      // The real card, not the default blank space, so the flying copy lifts
+      // off a live card and the cards behind the dialog keep following moves
+      // (see the gap below, and D30).
       placeholderBuilder: (context, heroSize, child) => child,
       child: Card(
         color: cardColour,

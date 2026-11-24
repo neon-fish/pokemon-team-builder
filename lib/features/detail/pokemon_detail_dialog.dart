@@ -157,10 +157,9 @@ class _PokemonDetailDialogState extends ConsumerState<PokemonDetailDialog> {
     final slot = _slot;
     final pokemon = widget.pokemon;
 
-    // What `Dialog` would draw: a rounded surface in the dialog colour. It is
-    // built by hand because the flip needs this surface inside a `Hero`. The
-    // values are the ones a Material 3 `Dialog` uses, shadow included: it has
-    // none (the default black one drew a dark outline).
+    // What `Dialog` would draw, built by hand because the flip needs this
+    // surface inside a `Hero`. The values are those a Material 3 `Dialog` uses,
+    // including no shadow.
     final surface = Material(
       color: Theme.of(context).colorScheme.surfaceContainerHigh,
       elevation: 6,
@@ -181,9 +180,8 @@ class _PokemonDetailDialogState extends ConsumerState<PokemonDetailDialog> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // First, so it is in view when the dialog opens. (Pinned
-                  // below the body instead, it left no room for the body on a
-                  // small screen with large text.)
+                  // First, so it is in view when the dialog opens, and inside
+                  // the scrolling part so it cannot crowd out the body.
                   if (slot != null) ...[
                     MoveControls(
                       slot,
