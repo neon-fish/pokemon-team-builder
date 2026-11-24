@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' show SemanticsRole;
 
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -148,6 +149,20 @@ void main() {
 
       expect(find.text('Move earlier'), findsNothing);
       expect(find.text('Move later'), findsNothing);
+    });
+
+    testWidgets('and no flip: it is a plain dialog', (tester) async {
+      await openDialog(tester, charizard);
+
+      expect(find.byType(Hero), findsNothing);
+    });
+
+    testWidgets('one that is on the team takes part in the flip', (
+      tester,
+    ) async {
+      await openDialog(tester, charizard, slot: 2);
+
+      expect(find.byType(Hero), findsOneWidget);
     });
 
     testWidgets('has move buttons, and the slot, for one that is', (
@@ -325,6 +340,19 @@ void main() {
   });
 
   group('for a screen reader', () {
+    testWidgets('it is announced as a dialog', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await openDialog(tester, charizard, slot: 1);
+
+      final node = tester.getSemantics(find.byType(PokemonDetailDialog));
+
+      expect(node.getSemanticsData().role, SemanticsRole.dialog);
+
+      // Disposed here, not in `addTearDown`: the framework checks for leftover
+      // handles before teardown callbacks run.
+      semantics.dispose();
+    });
+
     testWidgets('each weakness is one item, with its multiplier', (
       tester,
     ) async {

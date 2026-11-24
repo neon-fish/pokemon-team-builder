@@ -34,9 +34,12 @@ final _landedAt =
 /// to match to be invisible. With the system's "reduce motion" setting on,
 /// there is no animation and [child] simply shows.
 ///
-/// The cover sits over [child] only, but the ball and the flash use the whole
-/// card: [bleed] is how far the card reaches beyond [child] on each side. (The
-/// card, not this widget, cuts the ball off at its edge.)
+/// The picture, which is the cover, the ball and the flash, is drawn over the
+/// whole card, not only over [child]: [bleed] is how far the card reaches
+/// beyond [child] on each side. (The card, not this widget, cuts it off at its
+/// edge.) Covering all of the card matters: the card draws its hover colour on
+/// its surface under the content, and a cover over only the content left that
+/// colour showing round the edge while the ball was in flight.
 class ThrowIn extends ConsumerStatefulWidget {
   const ThrowIn({
     required this.slot,
@@ -158,7 +161,6 @@ class _ThrowInState extends ConsumerState<ThrowIn>
               painter: _ThrowPainter(
                 progress: _controller,
                 coverColour: widget.coverColour,
-                bleed: widget.bleed,
               ),
             ),
           ),
@@ -173,17 +175,11 @@ class _ThrowInState extends ConsumerState<ThrowIn>
 class _ThrowPainter extends CustomPainter {
   // `repaint` makes Flutter call `paint` on every tick of the controller, with
   // no need to rebuild any widgets.
-  _ThrowPainter({
-    required this.progress,
-    required this.coverColour,
-    required this.bleed,
-  }) : super(repaint: progress);
+  _ThrowPainter({required this.progress, required this.coverColour})
+    : super(repaint: progress);
 
   final Animation<double> progress;
   final Color coverColour;
-
-  /// How far this picture reaches beyond the content it covers.
-  final EdgeInsets bleed;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -194,15 +190,12 @@ class _ThrowPainter extends CustomPainter {
     final flight = (value / _landedAt).clamp(0.0, 1.0);
     final reveal = ((value - _landedAt) / (1 - _landedAt)).clamp(0.0, 1.0);
 
-    // The cover hides the content (which is the picture's area less the bleed)
-    // until the reveal is under way.
-    final content = RRect.fromRectAndRadius(
-      bleed.deflateRect(Offset.zero & size),
-      const Radius.circular(8),
-    );
+    // The cover hides the whole card, content and surface, until the reveal is
+    // under way. (The card's rounded corners cut it off, and its border and any
+    // buttons on it are drawn above.)
     final coverOpacity = 1 - ((reveal - 0.3) / 0.7).clamp(0.0, 1.0);
-    canvas.drawRRect(
-      content,
+    canvas.drawRect(
+      Offset.zero & size,
       Paint()..color = coverColour.withValues(alpha: coverOpacity),
     );
 
@@ -244,6 +237,5 @@ class _ThrowPainter extends CustomPainter {
   @override
   bool shouldRepaint(_ThrowPainter oldDelegate) =>
       oldDelegate.progress != progress ||
-      oldDelegate.coverColour != coverColour ||
-      oldDelegate.bleed != bleed;
+      oldDelegate.coverColour != coverColour;
 }

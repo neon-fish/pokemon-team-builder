@@ -10,34 +10,23 @@ import 'package:pokemon_team_builder/features/team/team_notifier.dart';
 /// be done with a keyboard. Each button swaps the Pokémon with the slot beside
 /// it, which is what dropping it there would do.
 ///
-/// [slot] is where the Pokémon is when this appears (counting from 0). The
-/// dialog stays open while the Pokémon is moved, so this keeps track of where
-/// it has got to.
-class MoveControls extends ConsumerStatefulWidget {
-  const MoveControls(this.slot, {super.key});
+/// [slot] is where the Pokémon is now (counting from 0). The dialog stays open
+/// while the Pokémon is moved, so whoever shows this keeps track of where it
+/// has got to: [onMoved] is called with the new slot, and should show this
+/// again with it.
+class MoveControls extends ConsumerWidget {
+  const MoveControls(this.slot, {required this.onMoved, super.key});
 
   final int slot;
+  final ValueChanged<int> onMoved;
 
-  @override
-  ConsumerState<MoveControls> createState() => _MoveControlsState();
-}
-
-class _MoveControlsState extends ConsumerState<MoveControls> {
-  late int _slot;
-
-  @override
-  void initState() {
-    super.initState();
-    _slot = widget.slot;
-  }
-
-  void _moveTo(int target) {
-    ref.read(teamProvider.notifier).move(_slot, target);
-    setState(() => _slot = target);
+  void _moveTo(WidgetRef ref, int target) {
+    ref.read(teamProvider.notifier).move(slot, target);
+    onMoved(target);
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     // A `Wrap` rather than a `Row`, so the pieces drop onto a second line when
     // the dialog is narrow or the text is large.
     return Wrap(
@@ -47,14 +36,14 @@ class _MoveControlsState extends ConsumerState<MoveControls> {
       runSpacing: 4,
       children: [
         TextButton.icon(
-          onPressed: _slot > 0 ? () => _moveTo(_slot - 1) : null,
+          onPressed: slot > 0 ? () => _moveTo(ref, slot - 1) : null,
           icon: const Icon(Icons.arrow_back),
           label: const Text('Move earlier'),
         ),
-        Text('Slot ${_slot + 1} of ${Team.slotCount}'),
+        Text('Slot ${slot + 1} of ${Team.slotCount}'),
         TextButton.icon(
-          onPressed: _slot < Team.slotCount - 1
-              ? () => _moveTo(_slot + 1)
+          onPressed: slot < Team.slotCount - 1
+              ? () => _moveTo(ref, slot + 1)
               : null,
           icon: const Icon(Icons.arrow_forward),
           label: const Text('Move later'),

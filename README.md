@@ -72,7 +72,7 @@ Tests use fakes, not the network: an in-memory `KeyValueStore`, a fake transport
 
 - **Domain:** type-chart maths, team rules (including old saved formats), search ranking, matchup ordering, defences.
 - **Data:** each decorator alone (retry timing to the millisecond with `fake_async`, limiter, cache, de-duplication, stale-while-revalidate), the parsers against trimmed real responses, and the repositories.
-- **Widgets:** every state of each feature (loading, empty, error with retry, incomplete), drag and drop, screen-reader actions, the control panel, and the throw-in animation (pumped through its durations: the reveal waits for the ball and for the data, it never replays, and reduced motion skips it).
+- **Widgets:** every state of each feature (loading, empty, error with retry, incomplete), drag and drop, screen-reader actions, the control panel, and the two animations (pumped through their durations: the throw-in's reveal waits for the ball and for the data and never replays, the flip shows the card then the dialog and back again, and reduced motion skips both).
 - **Flow:** the whole app over the real networking stack and a fake network. Failures at 100%, three attempts each, the waits logged, the screen saying what failed, and recovery after going back to normal.
 - **Layout and accessibility:** overflow checks at 320 px wide and double text size, contrast checks for every type colour and matrix cell in both themes, and semantics checks.
 
@@ -88,8 +88,9 @@ Run with `flutter run -d chrome` unless stated.
 | Add and remove | Click a result. Click an empty slot, then a result. Click ✕. | First empty slot fills. The chosen slot fills. Only that slot empties. |
 | Persistence | **Release build.** Add three Pokémon, choose dark, reload. Then clear site data and reload. | Team and theme survive the reload. After clearing, an empty team and system theme. |
 | Coverage | Add Charizard | Rock shows 4×, with a sentence naming the gap |
+| Details flip | Click a card. Close it with ✕, Esc and a click outside. Move a Pokémon with the buttons, then close. | The card turns and the dialog comes round from the other side. The card leaves a gap that follows the Pokémon when it is moved, and the other cards update behind the dialog. Closing flips back into the card the Pokémon is in now. |
 | Throw-in | Add a Pokémon. Reload with a saved team. Drag one into an empty slot. | A ball is thrown in and the slot is revealed. Saved slots throw one after another. Dragging throws nothing. |
-| Reduced motion | DevTools → Rendering → emulate `prefers-reduced-motion: reduce`, then add a Pokémon | No ball: slots show their normal loading spinner, then the Pokémon. (Checked by hand in Chrome.) |
+| Reduced motion | DevTools → Rendering → emulate `prefers-reduced-motion: reduce`, then add a Pokémon | No ball: slots show their normal loading spinner, then the Pokémon. The details dialog fades instead of flipping. (The ball was checked by hand in Chrome; the fade was not.) |
 | Failures | Control panel: 100% failures, clear cache and reload, then back to normal and "Try again" | See the table above |
 | Real network | DevTools: Network → Slow 3G, then Offline | Visible rows load progressively. Placeholders instead of broken images. Already-loaded data still works offline. |
 | Reordering | Hold a Pokémon about 0.3 s and drag onto another slot, then onto an empty one | Swap, then move. The state is saved. |
@@ -102,7 +103,7 @@ Not yet checked by hand on a physical touch screen or with a real screen reader.
 
 ## Known limitations
 
-- **Not built yet:** the flip into the details dialog (D22), which opens as a plain dialog for now, the compare view, and team-level stat totals.
+- **Not built yet:** the compare view, and team-level stat totals.
 - **The throw-in waits for the data.** With every request failing, a slot shows the resting ball for about 16 seconds before the error card. The remove button works meanwhile. (D29)
 - **Defence only.** Offence needs move data (D2).
 - **`Retry-After` is invisible to browsers** unless the server exposes it, and PokeAPI does not. Against the real API retries use plain backoff. The injected 429s do honour it. (D12)
@@ -117,7 +118,7 @@ Not yet checked by hand on a physical touch screen or with a real screen reader.
 ## With more time
 
 - A live contract test, opt-in and tagged, that checks the fixtures against the real API.
-- The flip into the dialog, compare view and team-level stats, if they do not land first.
+- The compare view and team-level stats, if they do not land first.
 - A browser-driven integration test for persistence and drag, which widget tests only simulate.
 - Offence coverage from move data, and a Box (a larger collection the team is drawn from).
 - Cancellable requests, and moving the cache to IndexedDB so it survives a reload.

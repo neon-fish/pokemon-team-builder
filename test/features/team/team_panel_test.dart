@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:flutter/gestures.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -36,6 +38,7 @@ class _HeldApiClient implements ApiClient {
 void main() {
   late InMemoryKeyValueStore store;
   late FakeApiClient api;
+  final screenKey = GlobalKey();
   var emptyTaps = 0;
 
   setUp(() {
@@ -65,11 +68,15 @@ void main() {
         ],
         child: MaterialApp(
           theme: buildAppTheme(Brightness.light),
-          home: Scaffold(
-            body: SingleChildScrollView(
-              child: SizedBox(
-                width: width,
-                child: TeamPanel(onEmptySlotTapped: () => emptyTaps++),
+          // The boundary lets a test take a picture of the whole screen.
+          home: RepaintBoundary(
+            key: screenKey,
+            child: Scaffold(
+              body: SingleChildScrollView(
+                child: SizedBox(
+                  width: width,
+                  child: TeamPanel(onEmptySlotTapped: () => emptyTaps++),
+                ),
               ),
             ),
           ),
@@ -375,6 +382,50 @@ void main() {
       expect(card.color, cover);
     });
 
+    testWidgets('hovering over a card whose ball is on its way changes nothing', (
+      tester,
+    ) async {
+      await pumpTeam(tester, saved: '{"ids":[25,25,25]}');
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(frame);
+
+      // Slot 2 is the last to throw, so it is still covered and has not yet
+      // thrown. Move the mouse onto it, and wait for the card's hover colour,
+      // which fades in over a short time, to appear.
+      final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await mouse.addPointer(location: Offset.zero);
+      addTearDown(mouse.removePointer);
+      await tester.pump();
+      final area = tester.getRect(slot(2));
+      await mouse.moveTo(area.center);
+      // One frame for the card to notice the mouse, then a little time for the
+      // colour to fade in. (Both are well inside the wait slot 2 has before it
+      // throws.)
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 60));
+
+      // A point in the card's padding, and one in the middle, under the cover.
+      final ring = area.centerLeft + const Offset(6, 0);
+      final middle = area.center + const Offset(0, 40);
+      final colours = await tester.runAsync(() async {
+        final boundary = tester.renderObject<RenderRepaintBoundary>(
+          find.byKey(screenKey),
+        );
+        final image = await boundary.toImage();
+        final bytes = (await image.toByteData())!;
+        List<int> at(Offset p) => [
+          for (var channel = 0; channel < 4; channel++)
+            bytes.getUint8(
+              (p.dy.toInt() * image.width + p.dx.toInt()) * 4 + channel,
+            ),
+        ];
+        return [at(ring), at(middle)];
+      });
+
+      expect(colours![0], colours[1]);
+    });
+
     testWidgets('one that cannot be loaded ends with the error, not a ball', (
       tester,
     ) async {
@@ -422,6 +473,35 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(columns(tester), 2);
+    });
+
+    testWidgets('every slot is the same width, and the gaps are even', (
+      tester,
+    ) async {
+      for (final width in [380.0, 700.0]) {
+        await pumpTeam(tester, width: width);
+        await tester.pumpAndSettle();
+
+        final first = tester.getSize(slot(0)).width;
+        for (var i = 1; i < 6; i++) {
+          expect(
+            tester.getSize(slot(i)).width,
+            closeTo(first, 0.01),
+            reason: 'slot $i at $width px',
+          );
+        }
+        // The gap between neighbours in the top row is the same everywhere.
+        final across = columns(tester);
+        for (var i = 1; i < across; i++) {
+          expect(
+            tester.getTopLeft(slot(i)).dx - tester.getTopRight(slot(i - 1)).dx,
+            closeTo(12, 0.01),
+            reason: 'gap before slot $i at $width px',
+          );
+        }
+        // And the row fills the space exactly, with no gap at the edge.
+        expect(tester.getTopRight(slot(across - 1)).dx, closeTo(width, 0.01));
+      }
     });
 
     testWidgets('three across on a wider space', (tester) async {

@@ -13,14 +13,28 @@ void main() {
   setUp(() => store = InMemoryKeyValueStore());
 
   /// Shows the controls for the Pokémon in slot [slot] of a team that has
-  /// Pikachu (25) there and Koraidon (10264) in every slot before it.
+  /// Pikachu (25) there and Koraidon (10264) in every other slot.
+  ///
+  /// The controls only say where the Pokémon has moved to; whoever shows them
+  /// keeps track and shows them again, as the details dialog does. So here a
+  /// small stand-in does the same.
   Future<void> pumpControls(WidgetTester tester, int slot) async {
     final ids = [for (var i = 0; i < 6; i++) i == slot ? 25 : 10264];
     store.data['team'] = '{"ids":$ids}';
+    var where = slot;
     await tester.pumpWidget(
       ProviderScope(
         overrides: [keyValueStoreProvider.overrideWithValue(store)],
-        child: MaterialApp(home: Scaffold(body: MoveControls(slot))),
+        child: MaterialApp(
+          home: Scaffold(
+            body: StatefulBuilder(
+              builder: (context, setState) => MoveControls(
+                where,
+                onMoved: (moved) => setState(() => where = moved),
+              ),
+            ),
+          ),
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -114,8 +128,10 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [keyValueStoreProvider.overrideWithValue(store)],
-        child: const MaterialApp(
-          home: Scaffold(body: SizedBox(width: 280, child: MoveControls(2))),
+        child: MaterialApp(
+          home: Scaffold(
+            body: SizedBox(width: 280, child: MoveControls(2, onMoved: (_) {})),
+          ),
         ),
       ),
     );

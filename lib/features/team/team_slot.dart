@@ -6,12 +6,14 @@ import 'package:pokemon_team_builder/core/api_failure.dart';
 import 'package:pokemon_team_builder/core/result.dart';
 import 'package:pokemon_team_builder/domain/pokemon.dart';
 import 'package:pokemon_team_builder/domain/team.dart';
+import 'package:pokemon_team_builder/features/detail/hero_flip.dart';
 import 'package:pokemon_team_builder/features/detail/pokemon_detail_dialog.dart';
 import 'package:pokemon_team_builder/features/pokemon/display_name.dart';
 import 'package:pokemon_team_builder/features/pokemon/pokemon_provider.dart';
 import 'package:pokemon_team_builder/features/pokemon/pokemon_sprite.dart';
 import 'package:pokemon_team_builder/features/pokemon/type_badge.dart';
 import 'package:pokemon_team_builder/features/team/add_target_notifier.dart';
+import 'package:pokemon_team_builder/features/team/lifted_slot_notifier.dart';
 import 'package:pokemon_team_builder/features/team/team_notifier.dart';
 import 'package:pokemon_team_builder/features/team/throw_in.dart';
 
@@ -147,6 +149,12 @@ class _FilledSlot extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Whether this slot's card is in the details dialog just now, so the slot
+    // is a gap. `select` so that only a change to this slot rebuilds it.
+    final isLifted = ref.watch(
+      liftedSlotProvider.select((lifted) => lifted == index),
+    );
+
     final request = ref.watch(pokemonProvider(id));
     // Null while loading, including a retry (see `SearchResultTile`).
     final details = request.isLoading ? null : request.value;
@@ -168,80 +176,94 @@ class _FilledSlot extends ConsumerWidget {
     // has to cover the content with exactly this colour.
     final cardColour = colours.surfaceContainerLow;
 
-    final card = Card(
-      color: cardColour,
-      margin: EdgeInsets.zero,
-      clipBehavior: Clip.antiAlias,
-      shape: isDropTarget
-          ? _slotShape(colours.primary, width: 2)
-          : _slotShape(colours.outlineVariant),
-      child: InkWell(
-        onTap: pokemon == null
-            ? null
-            : () => showPokemonDetail(context, pokemon, slot: index),
-        // Dragging is not available to a screen reader or the keyboard, so the
-        // same two moves are offered as actions. They swap with the
-        // neighbouring slot, which is what a drop on it would do. The first
-        // slot has nothing earlier, and the last nothing later, so those
-        // actions are left out.
-        //
-        // They are placed here, inside the `InkWell`, so that they join the
-        // item the screen reader lands on ("Pikachu, Electric"). Around the
-        // whole card they ended up on a separate, unlabelled item that nothing
-        // could focus, which would have made them unreachable.
-        child: Semantics(
-          // Joined to the name and types, so a reader says which slot this is,
-          // which is what "move earlier" and "move later" are relative to.
-          label: 'Slot ${index + 1}',
-          customSemanticsActions: {
-            if (index > 0)
-              const CustomSemanticsAction(label: 'Move earlier'): () =>
-                  team.move(index, index - 1),
-            if (index < Team.slotCount - 1)
-              const CustomSemanticsAction(label: 'Move later'): () =>
-                  team.move(index, index + 1),
-          },
-          child: Stack(
-            children: [
-              // The content sets the slot's size (so that larger text makes
-              // the slot taller). The top padding keeps it clear of the remove
-              // button.
-              Padding(
-                padding: _filledSlotPadding,
-                // When a Pokémon has just been added, a ball is thrown over
-                // this area and the content is revealed once it has loaded or
-                // failed. The remove button is outside it, so it is always
-                // there, even while the ball waits.
-                child: ThrowIn(
-                  slot: index,
-                  settled: details != null,
-                  coverColour: cardColour,
-                  bleed: _filledSlotPadding,
-                  child: switch (details) {
-                    null => const Center(child: CircularProgressIndicator()),
-                    Ok(:final value) => _Member(value),
-                    Err(:final failure) => _Unavailable(id, failure),
-                  },
+    // The card is the front of the flip into the details dialog (see
+    // `showPokemonDetail`). The tag is the slot, so a Pokémon that is in several
+    // slots flips from the one that was tapped.
+    final card = Hero(
+      tag: slotHeroTag(index),
+      flightShuttleBuilder: flipShuttleBuilder,
+      // While the dialog is open a `Hero` normally leaves a blank space where
+      // the card was. That space would stay in the slot the dialog was opened
+      // from, even after the buttons in the dialog move the Pokémon to another
+      // slot, so the cards behind the dialog would not follow the move until the
+      // dialog closed. Showing the real card instead keeps every card live; the
+      // flying copy just lifts off above it.
+      placeholderBuilder: (context, heroSize, child) => child,
+      child: Card(
+        color: cardColour,
+        margin: EdgeInsets.zero,
+        clipBehavior: Clip.antiAlias,
+        shape: isDropTarget
+            ? _slotShape(colours.primary, width: 2)
+            : _slotShape(colours.outlineVariant),
+        child: InkWell(
+          onTap: pokemon == null
+              ? null
+              : () => showPokemonDetail(context, pokemon, slot: index),
+          // Dragging is not available to a screen reader or the keyboard, so the
+          // same two moves are offered as actions. They swap with the
+          // neighbouring slot, which is what a drop on it would do. The first
+          // slot has nothing earlier, and the last nothing later, so those
+          // actions are left out.
+          //
+          // They are placed here, inside the `InkWell`, so that they join the
+          // item the screen reader lands on ("Pikachu, Electric"). Around the
+          // whole card they ended up on a separate, unlabelled item that nothing
+          // could focus, which would have made them unreachable.
+          child: Semantics(
+            // Joined to the name and types, so a reader says which slot this is,
+            // which is what "move earlier" and "move later" are relative to.
+            label: 'Slot ${index + 1}',
+            customSemanticsActions: {
+              if (index > 0)
+                const CustomSemanticsAction(label: 'Move earlier'): () =>
+                    team.move(index, index - 1),
+              if (index < Team.slotCount - 1)
+                const CustomSemanticsAction(label: 'Move later'): () =>
+                    team.move(index, index + 1),
+            },
+            child: Stack(
+              children: [
+                // The content sets the slot's size (so that larger text makes
+                // the slot taller). The top padding keeps it clear of the remove
+                // button.
+                Padding(
+                  padding: _filledSlotPadding,
+                  // When a Pokémon has just been added, a ball is thrown over
+                  // this area and the content is revealed once it has loaded or
+                  // failed. The remove button is outside it, so it is always
+                  // there, even while the ball waits.
+                  child: ThrowIn(
+                    slot: index,
+                    settled: details != null,
+                    coverColour: cardColour,
+                    bleed: _filledSlotPadding,
+                    child: switch (details) {
+                      null => const Center(child: CircularProgressIndicator()),
+                      Ok(:final value) => _Member(value),
+                      Err(:final failure) => _Unavailable(id, failure),
+                    },
+                  ),
                 ),
-              ),
-              // A button inside the tappable card takes its own taps, so
-              // removing never opens the details.
-              Positioned(
-                top: 0,
-                right: 0,
-                child: IconButton(
-                  icon: const Icon(Icons.close),
-                  tooltip: 'Remove $name from the team',
-                  onPressed: () => team.removeAt(index),
+                // A button inside the tappable card takes its own taps, so
+                // removing never opens the details.
+                Positioned(
+                  top: 0,
+                  right: 0,
+                  child: IconButton(
+                    icon: const Icon(Icons.close),
+                    tooltip: 'Remove $name from the team',
+                    onPressed: () => team.removeAt(index),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
     );
 
-    return LongPressDraggable<int>(
+    final draggable = LongPressDraggable<int>(
       // What is carried: where it came from. The slot it is dropped on does the
       // rest (see `TeamSlot`).
       data: index,
@@ -251,6 +273,19 @@ class _FilledSlot extends ConsumerWidget {
       // is clear where the Pokémon came from.
       childWhenDragging: Opacity(opacity: _draggedSlotOpacity, child: card),
       child: card,
+    );
+
+    // A slot whose card is in the dialog is a gap: invisible, with the same
+    // size, and not there to a pointer or a screen reader. These three wrappers
+    // are always present, switched on and off, because adding or removing a
+    // wrapper would rebuild everything inside it from scratch, the `Hero`
+    // included, in the middle of its flight.
+    return ExcludeSemantics(
+      excluding: isLifted,
+      child: IgnorePointer(
+        ignoring: isLifted,
+        child: Opacity(opacity: isLifted ? 0 : 1, child: draggable),
+      ),
     );
   }
 }

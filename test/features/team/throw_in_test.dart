@@ -87,13 +87,13 @@ void main() {
     expect(
       picture(tester),
       paints
-        ..rrect(color: cover)
+        ..rect(color: cover)
         ..circle(),
     );
   }
 
   void expectCoveredWithoutBall(WidgetTester tester) {
-    expect(picture(tester), paints..rrect(color: cover));
+    expect(picture(tester), paints..rect(color: cover));
     expect(picture(tester), isNot(paints..circle()));
   }
 
@@ -177,24 +177,19 @@ void main() {
       expect(drawing.size, greaterThan(content.size));
     });
 
-    testWidgets('but the cover is only over the content', (tester) async {
+    testWidgets('and the cover is over all of it, the card as well', (
+      tester,
+    ) async {
       await pumpThrowIn(tester, arrivals: {0: Duration.zero}, bleed: bleed);
       await tester.pump(frame);
 
+      // The whole picture, not just the part over the content. The card draws
+      // its hover colour on its surface under the content, and a cover over
+      // only the content let that show round the edge.
       final size = tester.getSize(find.byKey(const Key('throw-in-picture')));
-      final contentArea = Rect.fromLTRB(
-        bleed.left,
-        bleed.top,
-        size.width - bleed.right,
-        size.height - bleed.bottom,
-      );
-
       expect(
         picture(tester),
-        paints..rrect(
-          rrect: RRect.fromRectAndRadius(contentArea, const Radius.circular(8)),
-          color: cover,
-        ),
+        paints..rect(rect: Offset.zero & size, color: cover),
       );
     });
   });

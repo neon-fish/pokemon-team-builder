@@ -63,12 +63,16 @@ class TeamPanel extends ConsumerWidget {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        for (var column = 0; column < columns; column++)
+                        for (var column = 0; column < columns; column++) ...[
+                          // The gap is its own box between two slots, not
+                          // padding inside one. Padding on every slot but the
+                          // last made the last column wider than the rest, as
+                          // each column is given the same width and the
+                          // padding comes out of the slot's share.
+                          if (column > 0) const SizedBox(width: _gap),
                           Expanded(
                             child: Padding(
-                              // Gaps go between slots, not around the edge.
                               padding: EdgeInsets.only(
-                                right: column < columns - 1 ? _gap : 0,
                                 bottom: row < rows - 1 ? _gap : 0,
                               ),
                               child: ConstrainedBox(
@@ -82,6 +86,7 @@ class TeamPanel extends ConsumerWidget {
                               ),
                             ),
                           ),
+                        ],
                       ],
                     ),
                   ),
