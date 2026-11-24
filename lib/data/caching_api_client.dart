@@ -3,23 +3,19 @@ import 'dart:async';
 import 'package:pokemon_team_builder/core/result.dart';
 import 'package:pokemon_team_builder/data/api_client.dart';
 
-/// Remembers successful responses in memory, so repeat requests are instant and
-/// never reach the network.
-///
-/// Three behaviours:
+/// Remembers successful responses in memory, so repeat requests never reach the
+/// network.
 ///
 /// - **Fresh:** an answer younger than [ttl] is returned as it is.
 /// - **Stale while revalidating:** an answer older than [ttl] but younger than
-///   [ttl] + [staleFor] is still returned straight away, and a refresh runs in
-///   the background so the next request gets newer data. The user never waits
-///   for a refresh, and a failed refresh just leaves the old answer in place.
-/// - **De-duplication:** if the same URL is requested while it is already being
-///   fetched, the second caller shares the first caller's request.
+///   [ttl] + [staleFor] is returned straight away while a refresh runs in the
+///   background. A failed refresh leaves the old answer in place.
+/// - **De-duplication:** a request for a URL already being fetched shares that
+///   request.
 ///
-/// Only successes are stored. A failure is never cached, so the next request
-/// tries again. A "success" here means a response that arrived and was valid
-/// JSON; whether it is the right shape is for the caller to judge, and a caller
-/// that finds it is not should [forget] it, or a retry would get the same answer.
+/// Failures are never cached. A "success" is a response that was valid JSON;
+/// a caller that finds it the wrong shape should [forget] it, or a retry would
+/// get the same answer.
 ///
 /// Placed outside the concurrency limiter, so cache hits never take a slot.
 class CachingApiClient implements ApiClient, ResponseCache {

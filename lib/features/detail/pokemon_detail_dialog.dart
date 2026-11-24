@@ -153,8 +153,7 @@ class _PokemonDetailDialogState extends ConsumerState<PokemonDetailDialog> {
 
   @override
   Widget build(BuildContext context) {
-    // Copied to a local variable so that, after the null check, Dart knows it
-    // is not null (it cannot be sure of that for a field).
+    // A local copy, because a field is not promoted to non-null by the check.
     final slot = _slot;
     final pokemon = widget.pokemon;
 

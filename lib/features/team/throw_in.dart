@@ -22,24 +22,18 @@ final _landedAt =
 
 /// Plays the "ball thrown into the slot" animation over [child], if this slot
 /// has just had a Pokémon arrive (see [ArrivalsNotifier]). Otherwise it shows
-/// [child] as it is and does nothing.
+/// [child] unchanged.
 ///
-/// The ball flies in, lands, and waits there until the Pokémon is ready
-/// ([settled]: it has loaded, or has failed to). Then a flash fades the slot's
-/// content in. So a slow load delays the reveal, and a failed one reveals the
-/// error, never an endless ball. [child] is laid out the whole time, only
-/// covered, so nothing jumps when it is revealed.
+/// The ball flies in, lands, and waits until the Pokémon is ready ([settled]:
+/// loaded, or failed), then a flash reveals [child]. A slow load delays the
+/// reveal, and a failed one reveals the error, never an endless ball. [child]
+/// is laid out throughout and only covered, so nothing jumps on reveal.
 ///
-/// [coverColour] is the colour of the card behind [child], which the cover has
-/// to match to be invisible. With the system's "reduce motion" setting on,
-/// there is no animation and [child] simply shows.
-///
-/// The picture, which is the cover, the ball and the flash, is drawn over the
-/// whole card, not only over [child]: [bleed] is how far the card reaches
-/// beyond [child] on each side. (The card, not this widget, cuts it off at its
-/// edge.) Covering all of the card matters: the card draws its hover colour on
-/// its surface under the content, and a cover over only the content left that
-/// colour showing round the edge while the ball was in flight.
+/// [coverColour] must match the card behind [child] for the cover to be
+/// invisible. The cover, ball and flash are drawn over the whole card, not just
+/// [child]: [bleed] is how far the card reaches beyond [child] on each side,
+/// and the card clips the picture at its edge. With "reduce motion" on there is
+/// no animation.
 class ThrowIn extends ConsumerStatefulWidget {
   const ThrowIn({
     required this.slot,

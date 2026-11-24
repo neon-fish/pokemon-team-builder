@@ -7,15 +7,12 @@ const startupThrowStagger = Duration(milliseconds: 150);
 /// Which slots have just had a Pokémon arrive, and so should play the throw-in.
 ///
 /// Each entry is a slot number and how long that slot waits before throwing.
-/// A slot's widget looks itself up here when it first appears, and takes its
-/// entry out ([consume]) once it starts, so rebuilding it or moving it to a
-/// different layout cannot play the throw a second time.
+/// A slot's widget looks itself up when it first appears and takes its entry out
+/// ([consume]) as it starts, so a rebuild or a layout change cannot replay it.
 ///
-/// This is kept apart from the team itself, which is saved data: "this has just
-/// arrived" is a fact about the screen, not something to store. It is also
-/// recorded here, by the code that adds a Pokémon, because the widgets cannot
-/// work it out by comparing before and after. A slot that became filled because
-/// a Pokémon was dragged into it looks exactly like one that was added.
+/// Kept apart from the team, which is saved data: "just arrived" is a fact about
+/// the screen. It is recorded by the code that adds a Pokémon, because widgets
+/// cannot tell an add from a drag: both leave a slot newly filled.
 class ArrivalsNotifier extends Notifier<Map<int, Duration>> {
   @override
   Map<int, Duration> build() => const {};

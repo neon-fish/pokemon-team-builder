@@ -338,8 +338,7 @@ class MatchupCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Copied to a local variable as only local variables have their types narrowed by null-safety.
-    // `this.multiplier` is a field, so it is not narrowed.
+    // A local copy, because a field is not promoted to non-null by the check.
     final multiplier = this.multiplier;
     if (multiplier == null) return const SizedBox(height: _cellHeight + 4);
 

@@ -6,14 +6,12 @@ import 'package:pokemon_team_builder/features/team/team_notifier.dart';
 /// "Move earlier" and "Move later" buttons for a Pokémon on the team, with its
 /// place in the team between them.
 ///
-/// This is the way to reorder without a mouse or a touch screen: a drag cannot
-/// be done with a keyboard. Each button swaps the Pokémon with the slot beside
-/// it, which is what dropping it there would do.
+/// The way to reorder without a mouse or touch screen. Each button swaps the
+/// Pokémon with the slot beside it, as dropping it there would.
 ///
-/// [slot] is where the Pokémon is now (counting from 0). The dialog stays open
-/// while the Pokémon is moved, so whoever shows this keeps track of where it
-/// has got to: [onMoved] is called with the new slot, and should show this
-/// again with it.
+/// [slot] is where the Pokémon is now (from 0). The dialog stays open while it
+/// moves, so whoever shows this tracks the new place: [onMoved] is called with
+/// it, and should show this again with it.
 class MoveControls extends ConsumerWidget {
   const MoveControls(this.slot, {required this.onMoved, super.key});
 

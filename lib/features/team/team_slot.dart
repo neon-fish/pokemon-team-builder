@@ -200,16 +200,13 @@ class _FilledSlot extends ConsumerWidget {
           onTap: pokemon == null
               ? null
               : () => showPokemonDetail(context, pokemon, slot: index),
-          // Dragging is not available to a screen reader or the keyboard, so the
+          // Dragging is out of reach of a screen reader or keyboard, so the
           // same two moves are offered as actions. They swap with the
-          // neighbouring slot, which is what a drop on it would do. The first
-          // slot has nothing earlier, and the last nothing later, so those
-          // actions are left out.
+          // neighbouring slot, as a drop would. The first slot has no "earlier"
+          // and the last no "later".
           //
-          // They are placed here, inside the `InkWell`, so that they join the
-          // item the screen reader lands on ("Pikachu, Electric"). Around the
-          // whole card they ended up on a separate, unlabelled item that nothing
-          // could focus, which would have made them unreachable.
+          // They sit inside the `InkWell` so they join the item the screen
+          // reader lands on, rather than a separate unfocusable one (D21).
           child: Semantics(
             // Joined to the name and types, so a reader says which slot this is,
             // which is what "move earlier" and "move later" are relative to.
