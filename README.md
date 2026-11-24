@@ -4,6 +4,8 @@ A Flutter web app for building a team of up to six Pokémon and seeing where it 
 
 Data comes from [PokeAPI](https://pokeapi.co) (free, keyless). A built-in control panel injects latency, failures and bad payloads, so the error handling can be seen working.
 
+![The app in the dark theme: search on the left, a team of five, and the coverage matrix](docs/screenshot.png)
+
 ## Run it
 
 Requires Flutter 3.50 (stable) and Dart 3.14. Material comes from the separate `material_ui` package that Flutter 3.50 introduced.

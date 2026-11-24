@@ -47,5 +47,7 @@ app.*.map.json
 # Widget Preview related
 .widget_preview/
 
+# Private notes, not part of the repo
 brief.html
 job.md
+docs/talk-notes.md
