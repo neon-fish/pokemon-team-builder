@@ -358,3 +358,20 @@ Format: **Decision**, **Options considered**, **Why**, **Trade-offs / revisit if
   - During the flight the dialog's own place is empty and its picture is a second copy of its contents, so a dialog that is still loading its weaknesses shows its spinner in the picture, then the real thing.
   - The stretching described above.
   - Opening the dialog on a card whose throw-in is still playing has not been tried or tested; the two animations are not co-ordinated.
+
+## D31. Team stats, in a tab beside the coverage matrix
+
+- **A segmented control, "Coverage" and "Stats", with the content swapped in place.** The matrix is 18 rows tall, so stacking the stats under it would make a very long page, in the wide layout's column as much as on a phone. One panel keeps either view a manageable length and works the same at every width. Coverage is first and the default, because "where is this team weak?" is the headline.
+- **Not a `TabBar` with a `TabBarView`.** `TabBarView` needs a bounded height and swipes sideways, which fights the page's own scrolling. A `SegmentedButton` just chooses what to show, and reads to a screen reader as a choice of one. It fills the width (`expandedInsets`), so each half is an easy target.
+- **The chosen tab is a provider (`insightsTabProvider`)**, not widget state, because the panel is rebuilt from scratch when the window crosses 900 px and the choice should survive that. Not saved between visits, like the order of the matrix rows. A test rebuilds the panel and checks the tab is still there.
+- **The cost of tabs:** after adding a Pokémon you switch tabs to see how the stats changed. The matrix is the one that most needs to be live, so it is the default.
+- **The "may be incomplete" notice is on both tabs** (`IncompleteWarning`, moved out of the matrix). Stats built from a team with a member missing are as unreliable as the matrix. The stats do not need the type chart, so a failed chart does not hide them (tested).
+- **`teamMembersProvider`** is the one place that goes through the team slot by slot, loading each member and counting those still missing. The analysis and the stats both read it. Before, the analysis did this itself; it now reads from here, with the same results (its tests are unchanged).
+- **The maths is a pure domain function (`summariseStats`)** given the loaded members. For each stat: the mean, the highest and the lowest, and the member behind each. On a tie the earlier slot wins. It returns nothing for nobody, because an average of nobody means nothing. Averages keep their fraction in the domain and are rounded only for display (so the radar chart and the rows agree).
+- **What the tab shows:** a radar chart of the average (reusing `RadarChart`, on the same 0 to 200 scale as a single Pokémon's, so the two can be compared by eye), then one row per stat: its name, the average, and "Highest: X 135 · Lowest: Y 55". A team of one has nothing to compare, so no range; if every member has the same value it says "All the same" instead of naming one member twice. The average total follows.
+- **Left out:** a breakdown by type, which the matrix already answers, and any ranking or score for the team, which would be an opinion presented as a measurement.
+- **Screen readers** get one sentence a stat ("Attack: average 95. Highest: Koraidon Limited Build 135 · Lowest: Pikachu 55"), as the bars in the dialog do. The radar chart is a picture only and is hidden.
+- **Known limitations:**
+  - Checked in rendered frames and widget tests only, not in a browser by me.
+  - "Highest" and "lowest" name one member on a tie even if several share the value.
+  - Base stats only: no levels, natures or training, so the averages describe the species, not a trained team.

@@ -2,11 +2,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pokemon_team_builder/app/providers.dart';
 import 'package:pokemon_team_builder/core/api_failure.dart';
 import 'package:pokemon_team_builder/core/result.dart';
-import 'package:pokemon_team_builder/domain/pokemon_type.dart';
 import 'package:pokemon_team_builder/domain/team_analysis.dart';
 import 'package:pokemon_team_builder/domain/type_chart.dart';
 import 'package:pokemon_team_builder/features/pokemon/pokemon_provider.dart';
-import 'package:pokemon_team_builder/features/team/team_notifier.dart';
+import 'package:pokemon_team_builder/features/team/team_members_provider.dart';
 
 /// The type chart, loaded once. See [pokemonProvider] for why failures are
 /// values inside the `AsyncValue`. To retry: `ref.invalidate(typeChartProvider)`.
@@ -55,32 +54,22 @@ final class TeamAnalysisReady extends TeamAnalysisState {
 /// The team analysis, worked out from the team, the type chart and each
 /// member's details. It updates by itself as any of them load or change.
 final teamAnalysisProvider = Provider<TeamAnalysisState>((ref) {
-  // `.value` is null while an `AsyncValue` is still loading.
-  final team = ref.watch(teamProvider).value;
+  final members = ref.watch(teamMembersProvider);
   final chartResult = ref.watch(typeChartProvider).value;
-  if (team == null || chartResult == null) return const TeamAnalysisLoading();
+  if (members == null || chartResult == null) {
+    return const TeamAnalysisLoading();
+  }
 
   switch (chartResult) {
     case Err(:final failure):
       return TeamAnalysisUnavailable(failure);
     case Ok(value: final chart):
       // One entry per slot, so each result lines up with its slot.
-      final slotTypes = <List<PokemonType>?>[];
-      var missingCount = 0;
-      for (final id in team.slots) {
-        if (id == null) {
-          // An empty slot is not a member, so it is not "missing" either.
-          slotTypes.add(null);
-          continue;
-        }
-        final pokemon = ref.watch(pokemonProvider(id)).value?.valueOrNull;
-        if (pokemon == null) missingCount++;
-        slotTypes.add(pokemon?.types);
-      }
+      final slotTypes = [for (final pokemon in members.slots) pokemon?.types];
       return TeamAnalysisReady(
         analyseTeam(slotTypes, chart),
-        missingCount: missingCount,
-        analysedCount: slotTypes.nonNulls.length,
+        missingCount: members.missingCount,
+        analysedCount: members.loaded.length,
       );
   }
 });

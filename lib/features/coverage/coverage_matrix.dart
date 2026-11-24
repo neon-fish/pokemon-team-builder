@@ -9,6 +9,7 @@ import 'package:pokemon_team_builder/features/coverage/cell_colours.dart';
 import 'package:pokemon_team_builder/features/coverage/coverage_providers.dart';
 import 'package:pokemon_team_builder/features/coverage/exposure_message.dart';
 import 'package:pokemon_team_builder/features/coverage/multiplier_label.dart';
+import 'package:pokemon_team_builder/features/insights/incomplete_warning.dart';
 import 'package:pokemon_team_builder/features/pokemon/display_name.dart';
 import 'package:pokemon_team_builder/features/pokemon/pokemon_provider.dart';
 import 'package:pokemon_team_builder/features/pokemon/pokemon_sprite.dart';
@@ -34,18 +35,11 @@ class CoverageMatrix extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final coverage = ref.watch(coverageProvider);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Coverage', style: Theme.of(context).textTheme.titleLarge),
-        const SizedBox(height: 12),
-        switch (coverage) {
-          TeamAnalysisLoading() => const _Loading(),
-          TeamAnalysisUnavailable(:final failure) => _Unavailable(failure),
-          TeamAnalysisReady() => _Ready(coverage),
-        },
-      ],
-    );
+    return switch (coverage) {
+      TeamAnalysisLoading() => const _Loading(),
+      TeamAnalysisUnavailable(:final failure) => _Unavailable(failure),
+      TeamAnalysisReady() => _Ready(coverage),
+    };
   }
 }
 
@@ -114,8 +108,7 @@ class _Ready extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         // Said out loud: a team that looks safe may just be missing a member.
-        if (analysis.missingCount > 0)
-          _IncompleteWarning(analysis.missingCount),
+        if (analysis.missingCount > 0) IncompleteWarning(analysis.missingCount),
         if (analysis.analysedCount > 0) _Matrix(analysis.matchups),
       ],
     );
@@ -132,46 +125,6 @@ class _Message extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 24),
       child: Center(child: Text(text, textAlign: TextAlign.center)),
-    );
-  }
-}
-
-class _IncompleteWarning extends StatelessWidget {
-  const _IncompleteWarning(this.missingCount);
-
-  final int missingCount;
-
-  @override
-  Widget build(BuildContext context) {
-    final colours = Theme.of(context).colorScheme;
-    final who = missingCount == 1
-        ? '1 team member is'
-        : '$missingCount team members are';
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: colours.secondaryContainer,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              Icon(Icons.info_outline, color: colours.onSecondaryContainer),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  '$who still loading or could not be loaded, so this may be '
-                  'incomplete.',
-                  style: TextStyle(color: colours.onSecondaryContainer),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

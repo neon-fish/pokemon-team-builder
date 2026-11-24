@@ -1,6 +1,6 @@
 # Pokémon Team Builder
 
-A Flutter web app for building a team of up to six Pokémon and seeing where it is weak. Search the Pokédex, fill six slots, and a coverage matrix shows which of the 18 attacking types the team is exposed to, and says so in plain language.
+A Flutter web app for building a team of up to six Pokémon and seeing where it is weak. Search the Pokédex, fill six slots, and a coverage matrix shows which of the 18 attacking types the team is exposed to, and says so in plain language. A second tab gives the team's average stats.
 
 It runs on [PokeAPI](https://pokeapi.co) (free, keyless). A built-in control panel injects latency, failures and bad payloads on demand, so the resilience behaviour can be demonstrated rather than taken on trust.
 
@@ -88,6 +88,7 @@ Run with `flutter run -d chrome` unless stated.
 | Add and remove | Click a result. Click an empty slot, then a result. Click ✕. | First empty slot fills. The chosen slot fills. Only that slot empties. |
 | Persistence | **Release build.** Add three Pokémon, choose dark, reload. Then clear site data and reload. | Team and theme survive the reload. After clearing, an empty team and system theme. |
 | Coverage | Add Charizard | Rock shows 4×, with a sentence naming the gap |
+| Team stats | Add two or three Pokémon, open the Stats tab, then resize across 900 px | A radar chart of the average stats, and each stat's average with who is highest and lowest. The tab stays on Stats. |
 | Details flip | Click a card. Close it with ✕, Esc and a click outside. Move a Pokémon with the buttons, then close. | The card turns and the dialog comes round from the other side. The card leaves a gap that follows the Pokémon when it is moved, and the other cards update behind the dialog. Closing flips back into the card the Pokémon is in now. |
 | Throw-in | Add a Pokémon. Reload with a saved team. Drag one into an empty slot. | A ball is thrown in and the slot is revealed. Saved slots throw one after another. Dragging throws nothing. |
 | Reduced motion | DevTools → Rendering → emulate `prefers-reduced-motion: reduce`, then add a Pokémon | No ball: slots show their normal loading spinner, then the Pokémon. The details dialog fades instead of flipping. (The ball was checked by hand in Chrome; the fade was not.) |
@@ -103,7 +104,7 @@ Not yet checked by hand on a physical touch screen or with a real screen reader.
 
 ## Known limitations
 
-- **Not built yet:** the compare view, and team-level stat totals.
+- **Not built:** a compare view (two Pokémon side by side). The team stats and the dialog's radar chart cover most of it.
 - **The throw-in waits for the data.** With every request failing, a slot shows the resting ball for about 16 seconds before the error card. The remove button works meanwhile. (D29)
 - **Defence only.** Offence needs move data (D2).
 - **`Retry-After` is invisible to browsers** unless the server exposes it, and PokeAPI does not. Against the real API retries use plain backoff. The injected 429s do honour it. (D12)
@@ -111,14 +112,14 @@ Not yet checked by hand on a physical touch screen or with a real screen reader.
 - **Dragging** needs a short hold, does not auto-scroll the page near its edge, and swaps rather than shuffling the others along. (D21)
 - **Screen readers** hear one sentence per matrix row, so which member is weak is not available to them. (D26)
 - **Names:** hyphenated names such as `ho-oh` display as `Ho Oh` (D24). UI text is English only.
-- **Not saved:** the control-panel levers and the matrix order.
+- **Not saved:** the control-panel levers, the matrix order and the chosen analysis tab.
 - **Artwork** is the large official picture, scaled down on decode but fully downloaded. (D23)
 - **Fixtures** are trimmed copies of real responses, and nothing checks them against the live API.
 
 ## With more time
 
 - A live contract test, opt-in and tagged, that checks the fixtures against the real API.
-- The compare view and team-level stats, if they do not land first.
+- A compare view, reusing the radar chart.
 - A browser-driven integration test for persistence and drag, which widget tests only simulate.
 - Offence coverage from move data, and a Box (a larger collection the team is drawn from).
 - Cancellable requests, and moving the cache to IndexedDB so it survives a reload.

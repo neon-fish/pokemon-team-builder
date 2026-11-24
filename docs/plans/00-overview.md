@@ -15,7 +15,7 @@ The user searches for Pokémon, adds them to a team, and the dashboard answers o
 | **Search & browse** | Fast local search over the full Pokémon index (one request, searched client-side). Results show sprite, name, types. |
 | **Team** | Six fixed slots (any may be empty). Add, remove, reorder by dragging, persist across reloads. |
 | **Coverage analysis** | For each of the 18 attacking types: how many teammates are weak to it, resist it, or are immune. Gaps are flagged in plain language ("3 of 6 are weak to Ground and nobody resists it"). |
-| **Stat breakdown** | Team totals and spread by stat; breakdown by type. |
+| **Stat breakdown** | The team's average for each base stat, a radar chart of them, and who is highest and lowest in each. Shares a tabbed panel with the coverage matrix (D31). The type breakdown is the coverage matrix's job. |
 | **Compare** | Two or more selected Pokémon side by side, with a custom-painted radar chart. |
 | **Control panel** | A dev-facing panel with levers that inject latency, failures, rate limiting, malformed payloads and offline mode, plus cache controls. Makes the resilience behaviour visible and demonstrable on demand. |
 
@@ -125,6 +125,6 @@ Material as the structural base (scaffold, text fields, dialogs, navigation), he
 - [x] Team analysis (domain): `analyseTeam`, `TypeMatchup`, tested against the real type chart (D18).
 - [x] State: `pokemonProvider` (family), `typeChartProvider`, `teamAnalysisProvider` with `Loading` / `Unavailable` / `Ready` states (D19).
 - [x] Search state (index provider, query, ranked results), with the search UI (D23).
-- [ ] UI, in the order set out in [01-ui.md](01-ui.md). Done: theme (light, dark, system), sparse six-slot team (D20), search, team slots with add and remove, wide layout and bottom sheet (D23 to D25). Also done: the coverage matrix (D26), the control panel (D27) the detail dialog with its radar chart (D28) and reordering by dragging or by buttons (D21). Also done: the throw-in animation (D29) and the flip into the dialog (D30). To do: compare (optional), and the team-level stats. The team-level stat breakdown (totals and spread by stat) promised in section 1 is not built yet; keep it, or cut it from section 1.
+- [ ] UI, in the order set out in [01-ui.md](01-ui.md). Done: theme (light, dark, system), sparse six-slot team (D20), search, team slots with add and remove, wide layout and bottom sheet (D23 to D25). Also done: the coverage matrix (D26), the control panel (D27) the detail dialog with its radar chart (D28) and reordering by dragging or by buttons (D21). Also done: the throw-in animation (D29) and the flip into the dialog (D30). Also done: the team-level stats, in a tab beside the coverage matrix (D31). To do: the compare view, which is likely to be cut.
 - [x] Control panel UI: levers, retry log, clear cache and reload, end drawer (D27).
 - [x] README: setup, decisions, QA approach, manual test plan, known limitations. To revisit as the remaining UI steps land.
