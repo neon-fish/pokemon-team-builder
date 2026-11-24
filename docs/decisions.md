@@ -23,7 +23,7 @@ Format: **Decision**, **Options considered**, **Why**, **Trade-offs / revisit if
 - **Decision:** An analytical dashboard that answers "where is this team weak?", rather than a Pokédex list.
 - **Options considered:** Plain Pokédex browser; collection ("found") dashboard with breakdowns.
 - **Why:** Gives the data a purpose, produces a natural comparison view, and keeps scope tight (search, team, analysis) while leaving room to go deep.
-- **Trade-offs / revisit if:** Offensive coverage needs move data, which is out of scope for v1. v1 approximates it with STAB and states this limitation.
+- **Trade-offs / revisit if:** Offensive coverage needs move data, which is out of scope for v1. v1 covers defence only and states this limitation. (An approximation from a Pokémon's own types, STAB, was considered and not built.)
 
 ## D3. Camera / image recognition: not doing it
 

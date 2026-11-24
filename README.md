@@ -101,7 +101,7 @@ Run with `flutter run -d chrome` unless stated.
 | Themes | Light, dark and system. Reload. | No flash of the wrong theme |
 | Screen reader | NVDA or VoiceOver over a slot, the matrix and the dialog | "Slot 2, Pikachu, Electric" with move actions. One sentence per matrix row and per stat. |
 
-Not yet checked by hand on a physical touch screen or with a real screen reader.
+Checked by hand in Chrome: persistence in a release build, dragging, and both animations (the reduced-motion fade was not). Not yet checked on a physical touch screen or with a real screen reader.
 
 ## Known limitations
 
